@@ -1,0 +1,24 @@
+text{
+    font-family: "Monokai",monospace;
+    font-weight: bold;
+}
+
+.dataType{
+    color: cyan;
+    font-style: italic;
+}
+.identifier{
+    color:black;
+}
+.operator{
+    color: red;
+}
+.number{
+    color: violet;
+}
+.comment{
+    color:gray
+}
+.keyword{
+    color:red;
+}
