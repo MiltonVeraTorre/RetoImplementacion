@@ -6,33 +6,34 @@
 (define IDENTIFIER 'identifier)
 (define OPERATOR 'operator)
 (define NUMBER 'number)
+(define NEWLINE 'newline)
 
 ; Función para analizar la entrada en tokens
 (define (tokenize str)
-  (cond [(string-prefix? str "//") 
-         (let* [(comment-end (and (regexp-match-positions #rx"\n" str) 
-                                 (caar (regexp-match-positions #rx"\n" str))))
-                (comment (if comment-end (substring str 0 comment-end) str))]
-           (cons (cons COMMENT comment) 
-                 (if comment-end (tokenize (substring str (+ comment-end 1) (string-length str))) '())))]
-        [(string-prefix? str "let ") 
-         (cons (cons KEYWORD "let") (tokenize (substring str 4 (string-length str))))]
-        [(string-prefix? str "= ") 
-         (cons (cons OPERATOR "=") (tokenize (substring str 2 (string-length str))))]
-        [(string-prefix? str " ") 
-         (tokenize (substring str 1 (string-length str)))]
-        [(string-prefix? str "\n") 
-         (tokenize (substring str 1 (string-length str)))]
-        [else
-         (let* [(match (regexp-match #px"^[a-zA-Z_][a-zA-Z0-9_]*" str))
-                (id (if match (car match) ""))]
-           (if (> (string-length id) 0)
-               (cons (cons IDENTIFIER id) (tokenize (substring str (string-length id) (string-length str))))
-               (let* [(match (regexp-match #px"^[0-9]+" str))
-                      (num (if match (car match) ""))]
-                 (if (> (string-length num) 0)
-                     (cons (cons NUMBER num) (tokenize (substring str (string-length num) (string-length str))))
-                     '()))))]))
+  (letrec [(inner (lambda (str acc)
+                    (cond [(string=? str "") (reverse acc)]
+                          [(char=? (string-ref str 0) #\newline)
+                           (inner (substring str 1) (cons (cons NEWLINE "\n") acc))]
+                          [(char=? (string-ref str 0) #\space)
+                           (inner (substring str 1) acc)]
+                          [(string-prefix? str "//")
+                           (let* [(comment-end (or (and (regexp-match-positions #rx"\n" str) 
+                                                       (caar (regexp-match-positions #rx"\n" str)))
+                                                  (string-length str)))
+                                 (comment (substring str 0 comment-end))]
+                             (inner (substring str (+ 1 comment-end)) (cons (cons COMMENT comment) acc)))]
+                          [(string-prefix? str "let ")
+                           (inner (substring str 4) (cons (cons KEYWORD "let") acc))]
+                          [(string-prefix? str "= ")
+                           (inner (substring str 2) (cons (cons OPERATOR "=") acc))]
+                          [else
+                           (let* [(identifier-end (or (and (regexp-match-positions #rx" " str) 
+                                                          (caar (regexp-match-positions #rx" " str)))
+                                                     (string-length str)))
+                                 (identifier (substring str 0 identifier-end))]
+                             (inner (substring str identifier-end) (cons (cons IDENTIFIER identifier) acc)))])))]
+    (inner str '())))
+
 
 
 
@@ -40,9 +41,15 @@
 (define (generate-html tokens)
   (string-append "<!DOCTYPE html>\n<html>\n<head>\n<link rel=\"stylesheet\" href=\"estilos.css\">\n</head>\n<body>\n"
                  (string-join (map (lambda (token)
-                                     (string-append "<text class=\"" (symbol->string (car token)) "\">" (cdr token) "</text><br>\n")) tokens)
-                              "")
+                                     (if (eq? (car token) NEWLINE)
+                                         "<br>\n"
+                                         (string-append "<text class=\"" (symbol->string (car token)) "\">" 
+                                                        (cdr token) 
+                                                        "</text>"))) tokens)
+                              "\n")
                  "</body>\n</html>"))
+
+
 
 ; Función principal
 (define (main)
