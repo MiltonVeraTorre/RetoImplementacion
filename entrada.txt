@@ -11,3 +11,11 @@ for(let i = 5 ; i < 5 ; i = i + 1 ){
 
 } 
 
+function prueba (a , b ){
+    return a + b 
+} 
+
+while(a > 2 ){
+    let z = z + a 
+}
+

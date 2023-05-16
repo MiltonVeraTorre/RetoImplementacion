@@ -13,14 +13,28 @@
 (define PARENTHESIS 'parenthesis)
 (define BRACE 'brace)
 
+; Documentación general de la funcion de tokenize(flujo de la funcion)
+
+;;; 1) Se define una función auxiliar recursiva inner que toma un string y una lista de tokens acumulados como argumentos.
+
+;;; 2) inner examina el principio del string y verifica una serie de condiciones para determinar qué tipo de token (si corresponde) comienza el string. Cada condición corresponde a un tipo diferente de token que podría aparecer al principio del string. Las condiciones se verifican en un orden específico, por lo que si varias condiciones podrían ser verdaderas, se elige la primera.
+
+;;; 3) Se examina cada condición y en caso de ser verdadera se genera el token y se llama inner con un substring que ya no incluya el token que ya se reconoció
+
+;;; 4) Finalmente, se llama a inner con el string de entrada completo y una lista vacía de tokens acumulados.
+
+
+
 ; Definimos la funcion tokenize que tokeniza un string
 (define (tokenize str)
   ; Declarando la función interna 'inner' que se llama a sí misma recursivamente
+  ; Letrec permite definir variables que se pueden llamar entre sí en este caso es para que inner se pueda llamar a sí misma sin estar completamente definida
   (letrec [(inner ; inner toma un string y una lista de tokens acumulados
       (lambda (str acc) 
                     (cond ; Comenzamos con una condición
 
                           ; Si el string es vacío, terminamos la recursión y devolvemos los tokens acumulados en orden inverso
+                          ; Se devuelven en orden inverso ya que se van agregando al inicio de la lista y para obtenerlo en su orden original hay que invertirla
                           [(string=? str "") (reverse acc)] 
 
                           ; Si el string comienza con un salto de línea "\n", generamos un token NEWLINE y llamamos a inner de nuevo
@@ -76,12 +90,36 @@
                                   (cons (cons KEYWORD "let") acc)  ; Crea una nueva pareja donde el primer elemento es otra pareja (KEYWORD "let") y el segundo elemento es 'acc', que es el acumulador que almacena los tokens generados hasta ahora.
                             )
                           ] 
+
+                          [(regexp-match? #rx"^[0-9]" str) 
+                            (let* 
+                              [ ; Comienza la lista de declaraciones de variables
+                                (number-end ; Declaramos la variable 'number-end'
+                                  (or ; Usamos el operador 'or' para asignar el primer valor que no sea falso
+                                    (and ; Busca la primera ocurrencia de un espacio en blanco en la cadena 'str'.
+                                      (regexp-match-positions #rx"[^0-9.]" str) ; Devuelve una lista de posiciones donde se encuentra el patrón. En este caso, estamos buscando cualquier carácter que no sea un dígito o un punto.
+                                      (caar (regexp-match-positions #rx"[^0-9.]" str)) ; Extraemos la primera posición de la primera coincidencia. 'caar' se usa para obtener el primer elemento de la primera sublista.
+                                    )
+                                    (string-length str) ; Si no se encuentra un espacio en blanco, tomamos la longitud total de la cadena 'str'
+                                  )
+                                )
+                                (number (substring str 0 number-end)) ; Extraemos el número de la cadena 'str' tomando una subcadena desde el inicio hasta 'number-end'  
+                              ]
+                              (inner (substring str number-end) (cons (cons NUMBER number) acc)) ; Llamamos a la función 'inner' de forma recursiva, proporcionando una subcadena de 'str' que comienza en 'number-end' y agregando el número a la lista de tokens 'acc'.
+                            )
+                          ]
+
+
                           [(string-prefix? str "const ") 
                            (inner (substring str 6) (cons (cons KEYWORD "const") acc))]
                           [(string-prefix? str "function ") 
                            (inner (substring str 9) (cons (cons KEYWORD "function") acc))]
                           [(string-prefix? str "for") 
                            (inner (substring str 3) (cons (cons KEYWORD "for") acc))]
+                          [(string-prefix? str "while") 
+                           (inner (substring str 5) (cons (cons KEYWORD "while") acc))]
+                          [(string-prefix? str "return") 
+                           (inner (substring str 6) (cons (cons KEYWORD "return") acc))]
 
                           ; Si el string comienza con un operador "=", "+", "-", "*", "/", "==", "<", ">", generamos un token OPERATOR y llamamos a inner de nuevo
                           [(string-prefix? str "= ") 
@@ -124,9 +162,14 @@
                            (inner (substring str 2) (cons (cons BRACE "}") acc))]
 
                           [(string-prefix? str "; ") 
-                           (inner (substring str 2) (cons (cons DELIMITER "}") acc))]
+                           (inner (substring str 2) (cons (cons DELIMITER ";") acc))]
                           [(string-prefix? str ";") 
-                           (inner (substring str 1) (cons (cons DELIMITER "}") acc))]
+                           (inner (substring str 1) (cons (cons DELIMITER ";") acc))]
+
+                          [(string-prefix? str ", ") 
+                           (inner (substring str 2) (cons (cons DELIMITER ",") acc))]
+                          [(string-prefix? str ",") 
+                           (inner (substring str 1) (cons (cons DELIMITER ",") acc))]
 
 
                           [(string-prefix? str "!= ") 
