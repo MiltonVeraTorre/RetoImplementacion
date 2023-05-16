@@ -22,3 +22,9 @@ text{
 .keyword{
     color:red;
 }
+.parenthesis{
+    color: slateblue;
+}
+.brace{
+    color: orange;
+}
