@@ -471,32 +471,44 @@
 ; Esta función toma una lista de tokens y la convierte en un string de HTML.
 (define (generate-html tokens)
   (string-append "<!DOCTYPE html>\n<html>\n<head>\n<link rel=\"stylesheet\" href=\"estilos.css\">\n</head>\n<body>\n"
-                 (string-join (map (lambda (token)
-                                     (if (eq? (car token) NEWLINE) ; Si el token es una nueva línea, generamos un <br>.
-                                         "<br>\n"
-                                         (string-append "<text class=\"" (symbol->string (car token)) "\">" ; Si el token es cualquier otra cosa, generamos un <text> con una clase
-                                                        (cdr token) 
-                                                        "</text>"))) tokens)
-                              "\n")
-                 "</body>\n</html>"))
+    (string-join 
+      (map (lambda (token)
+        (if (eq? (car token) NEWLINE) ; Si el token es una nueva línea, generamos un <br>.
+        "<br>\n"
+        (string-append "<text class=\"" (symbol->string (car token)) "\">" ; Si el token es cualquier otra cosa, generamos un <text> con una clase
+          (cdr token) 
+          "</text>"))) 
+        tokens
+      )
+      "\n"
+    )
+    "</body>\n</html>"
+  )
+)
 
 
 
 ; Función para imprimir tokens
 (define (print-tokens tokens)
   (for-each (lambda (token)
-              (printf "~a ~a~n" (car token) (cdr token)))
-            tokens))
+    (printf "~a ~a~n" (car token) (cdr token)))
+    tokens
+  )
+)
 
 ; Función principal
 (define (main)
   (let* 
-  [(input (file->string "entrada.txt"))] ; Lee el archivo de entrada en un string.
+    [(input (file->string "entrada.txt"))] ; Lee el archivo de entrada en un string.
     ;(printf "Texto de entrada:\n~a\n" input) ; Imprime el texto de entrada.
     (let [(tokens (tokenize input))] ; Tokeniza el string de entrada.
       (print-tokens tokens) ; Imprime los tokens.
       (let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
         (call-with-output-file "output.html" ; Abre el archivo de salida.
-          (lambda (out) (display output out))))))) ; Escribe el HTML en el archivo de salida.
+        (lambda (out) (display output out)))
+      )
+    )
+  )
+) ; Escribe el HTML en el archivo de salida.
 
 (main) ; Ejecuta la función principal.
