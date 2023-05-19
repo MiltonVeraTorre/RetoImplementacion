@@ -415,52 +415,72 @@
 ;;; OP → "+" | "-" | "*" | "/" | "==" | "<" | ">" | "!="
 
 (define (es_OP tokens indice)
-  (if (and (>= indice (length tokens))
-           (equal? (car (list-ref tokens indice)) OPERATOR))
-      (+ indice 1)
-      #f))
+  (if 
+    (and 
+      (>= indice (length tokens))
+      (equal? (car (list-ref tokens indice)) OPERATOR)
+    )
+    (+ indice 1)
+    #f
+  )
+)
 
 
 ;; es_F: vector indice -> numero / #f
 ;;; F → "function" I "(" LI ")" "{" LD "}"
 
 (define (es_F tokens indice)
-  (if (and (>= indice (- (length tokens) 7))  ;; Nos aseguramos de que hay suficientes tokens
-           (equal? (cdr (list-ref tokens indice)) "function")
-           (equal? (car (list-ref tokens (+ indice 1))) IDENTIFIER)
-           (equal? (cdr (list-ref tokens (+ indice 2))) "("))
-      (let* (
-            (nuevo_indice (es_LI tokens (+ indice 3)))
-            (nuevo_indice_2 (if (and 
-                                    (number? nuevo_indice)
-                                    (equal? (cdr (list-ref tokens nuevo_indice)) ")")
-                                    (equal? (cdr (list-ref tokens (+ nuevo_indice 1))) "{")
-                                  )
-                                 (es_LD tokens (+ nuevo_indice 2))
-                                 #f)
-            )
-            )
-        (if (and (number? nuevo_indice_2)
-                 (equal? (cdr (list-ref tokens nuevo_indice_2)) "}")
-            )
-
-            (+ nuevo_indice_2 1)
-            #f))
-
-      #f))
+  (if 
+    (and 
+      (>= indice (- (length tokens) 7))  ;; Nos aseguramos de que hay suficientes tokens
+      (equal? (cdr (list-ref tokens indice)) "function")
+      (equal? (car (list-ref tokens (+ indice 1))) IDENTIFIER)
+      (equal? (cdr (list-ref tokens (+ indice 2))) "(")
+    )
+    (let* (
+      (nuevo_indice (es_LI tokens (+ indice 3)))
+      (nuevo_indice_2 
+        (if 
+          (and 
+          (number? nuevo_indice)
+          (equal? (cdr (list-ref tokens nuevo_indice)) ")")
+          (equal? (cdr (list-ref tokens (+ nuevo_indice 1))) "{")
+          )
+          (es_LD tokens (+ nuevo_indice 2))
+          #f
+        )
+      ))
+      (if (and (number? nuevo_indice_2)
+        (equal? (cdr (list-ref tokens nuevo_indice_2)) "}")
+        )
+        (+ nuevo_indice_2 1)
+        #f
+      )
+    )
+  #f
+  )
+)
 
 ;; es_LI: vector indice -> numero / #f
 ;;; LI → I "," LI | ε
 
 (define (es_LI tokens indice)
-  (cond ((>= indice (length tokens)) #f)  ;; No hay más tokens
-        ((equal? (car (list-ref tokens indice)) IDENTIFIER)  ;; Identificador
-         (if (and (>= indice (- (length tokens) 1))  ;; Hay un token más
-                  (equal? (cdr (list-ref tokens (+ indice 1))) ","))  ;; Y es una coma
+  (cond 
+    ((>= indice (length tokens)) #f)  ;; No hay más tokens
+    ((equal? (car (list-ref tokens indice)) IDENTIFIER)  ;; Identificador
+      (if 
+        (and 
+          (>= indice (- (length tokens) 1))  ;; Hay un token más
+          (equal? (cdr (list-ref tokens (+ indice 1))) ",")
+        )  ;; Y es una coma
               
-             (es_LI tokens (+ indice 2))  ;; Continuamos con el siguiente identificador
-             (+ indice 1)))  ;; No hay coma, terminamos aquí
-        (else #f)))
+        (es_LI tokens (+ indice 2))  ;; Continuamos con el siguiente identificador
+        (+ indice 1)
+      )
+    )  ;; No hay coma, terminamos aquí
+    (else #f)
+  )
+)
 
 
 
