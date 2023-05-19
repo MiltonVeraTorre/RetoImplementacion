@@ -44,4 +44,3 @@
 (define SEMICOLON 'semicolon)
 (define COMMA 'comma)
 (define COLOR 'colon)
-

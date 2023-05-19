@@ -22,12 +22,14 @@ text{
 .keyword{
     color:red;
 }
-.parenthesis{
+.left_parenthesis,
+.right_parenthesis{
     color: slateblue;
 }
-.brace{
+.left_brace,
+.right_brace{
     color: orange;
 }
-.delimiter{
+.separator,.semicolon{
     color:brown
 }
