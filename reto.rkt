@@ -73,11 +73,6 @@
 ;;; 4) Finalmente, se llama a inner con el string de entrada completo y una lista vacía de tokens acumulados.
 
 
-
-(define ContadorParentesis 0)
-(define ContadorBrackets 0)
-
-
 ; Definimos la funcion tokenize que tokeniza un string
 (define (tokenize str)
   ; Declarando la función interna 'inner' que se llama a sí misma recursivamente
@@ -307,9 +302,9 @@
   (if (>= indice (length tokens)) ; Verificamos si la longitud es mayor que la de la lista
     #f
     (case (car (list-ref tokens indice)) ; Verificamos si se cumple alguno de los casos definidos en la gramatica
-      ((keyword) (es_DV tokens (+ indice 1))) ;Verificamos si de trata de una declaración de una variable
+      ((keyword) (es_DV tokens indice)) ;Verificamos si de trata de una declaración de una variable
       ((IDENTIFIER) (es_F tokens (+ indice 1))) ; Verificamos si se trata de una función
-      ((NUMBER) (es_C tokens (+ indice 1))) ; Verificamos si se trata de un ciclo
+      ((number) (es_C tokens (+ indice 1))) ; Verificamos si se trata de un ciclo
       ((comment) (es_COM tokens  indice )) ; Verificamos si se trata de un comentario
       ((newline) (es_D tokens (+ indice 1)))
       (else #f)
@@ -326,13 +321,14 @@
 ;;; DV → ("let" | "const") I "=" E
 (define (es_DV tokens indice)
   (if (>= indice (length tokens)) ; Verificamos si se sobrepasa la longitud
-    #f
+    (begin (display "hola")#f)
     ; Si hay más tokens para analizar, extraemos el tipo y el valor del token en el índice actual.
     (let 
       (
         (token-type (car (list-ref tokens indice))) ; Guardamos el tipo de token
         (token-value (cdr (list-ref tokens indice))) ; Guardamos el valor del token
       )
+      ;(display (eq? (vector-ref tokens (+ indice 1)) 'type) IDENTIFIER))
         
       ; También verificamos si el siguiente token es un IDENTIFIER y si el token después de ese es un OPERATOR con valor "=".
       ; Si todas estas condiciones se cumplen, entonces tenemos el comienzo de una declaración de variable.
@@ -349,7 +345,8 @@
         (es_E tokens (+ indice 3))
         ; Si alguna de las condiciones no se cumple, los tokens no forman una declaración de variable válida,
         ; por lo que devolvemos #f.
-        #f
+        (begin (display "adios")#f)
+
       )
     )
   )
