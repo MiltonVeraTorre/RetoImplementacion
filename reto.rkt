@@ -303,14 +303,16 @@
 
 ;;; D → DV | F | C | COM
 (define (es_D tokens indice)
+  (print (list-ref  tokens indice ))
   (if (>= indice (length tokens)) ; Verificamos si la longitud es mayor que la de la lista
     #f
-    (case ((list-ref tokens indice) 'type) ; Verificamos si se cumple alguno de los casos definidos en la gramatica
-      [(KEYWORD) (es_DV tokens (+ indice 1))] ;Verificamos si de trata de una declaración de una variable
-      [(IDENTIFIER) (es_F tokens (+ indice 1))] ; Verificamos si se trata de una función
-      [(NUMBER) (es_C tokens (+ indice 1))] ; Verificamos si se trata de un ciclo
-      [(COMMENT) (es_COM tokens (+ indice 1))] ; Verificamos si se trata de un comentario
-      [else #f]
+    (case (car (list-ref tokens indice)) ; Verificamos si se cumple alguno de los casos definidos en la gramatica
+      ((keyword) (es_DV tokens (+ indice 1))) ;Verificamos si de trata de una declaración de una variable
+      ((IDENTIFIER) (es_F tokens (+ indice 1))) ; Verificamos si se trata de una función
+      ((NUMBER) (es_C tokens (+ indice 1))) ; Verificamos si se trata de un ciclo
+      ((comment) (es_COM tokens  indice )) ; Verificamos si se trata de un comentario
+      ((newline) (es_D tokens (+ indice 1)))
+      (else #f)
     )
   )
 ) ; Si no se identifica ninguno de los casos devolvemos que es falso y no se encontró una declaración valida
@@ -397,16 +399,27 @@
 ;;; COM → "//" I
 
 (define (es_COM tokens indice)
-  (if (and (>= indice (- (length tokens) 1))
-           (equal? (cdr (list-ref tokens indice)) "//")
-           (equal? (car (list-ref tokens (+ indice 1))) IDENTIFIER))
-      (+ indice 2)
-      #f))
+  (display  (<= indice (- (length tokens) 1))) 
+  (if (and (<= indice (- (length tokens) 1))
+           (regexp-match? #"//.*" (cdr (list-ref tokens indice)))
+           ;(equal? (car (list-ref tokens (+ indice 1))) IDENTIFIER)
+      )
+      (begin
+        (display "funciona aca")
+        (+ indice 1)
+      )
+
+       (begin (display "hola") #f)
+
+      
+  )
+)
 
 ;; es_O: vector indice -> numero / #f
 ;;; O → E OP E | O OP E
 
 (define (es_O tokens indice)
+
   (let ((nuevo_indice (es_E tokens indice)))
     (if (and (number? nuevo_indice)
              (>= nuevo_indice (- (length tokens) 1))
@@ -526,12 +539,12 @@
     [(input (file->string "entrada.txt"))] ; Lee el archivo de entrada en un string.
     ;(printf "Texto de entrada:\n~a\n" input) ; Imprime el texto de entrada.
     (let [(tokens (tokenize input))] ; Tokeniza el string de entrada.
-      (print-tokens tokens) ; Imprime los tokens.
-      ()
-      (let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
-        (call-with-output-file "output.html" ; Abre el archivo de salida.
-        (lambda (out) (display output out)))
-      )
+      ;(print-tokens tokens) ; Imprime los tokens.
+      (print (es_P tokens 0))
+      ;(let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
+      ;  (call-with-output-file "output.html" ; Abre el archivo de salida.
+      ;  (lambda (out) (display output out)))
+      ;)
     )
   )
 ) ; Escribe el HTML en el archivo de salida.
