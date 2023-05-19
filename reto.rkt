@@ -13,6 +13,10 @@
 (define PARENTHESIS 'parenthesis)
 (define BRACE 'brace)
 
+(define ContadorParentesis 0)
+(define ContadorBrackets 0)
+
+
 ; Definimos la funcion tokenize que tokeniza un string
 (define (tokenize str)
   ; Declarando la función interna 'inner' que se llama a sí misma recursivamente
@@ -103,30 +107,48 @@
 
                            ; Si el string comienza con un paréntesis o llave, generamos un token PARENTHESIS o BRACE y llamamos a inner de nuevo
                           [(string-prefix? str "(") 
-                           (inner (substring str 1) (cons (cons PARENTHESIS "(") acc))]
+                           (set! ContadorParentesis (+ ContadorParentesis 1))
+                           (inner (substring str 1) (cons (cons PARENTHESIS "(") acc))
+                          ]
                           [(string-prefix? str "( ") 
-                           (inner (substring str 2) (cons (cons PARENTHESIS "(") acc))]
+                           (set! ContadorParentesis (+ ContadorParentesis 1))
+                           (inner (substring str 2) (cons (cons PARENTHESIS "(") acc))
+                          ]
 
                           [(string-prefix? str ")") 
-                           (inner (substring str 1) (cons (cons PARENTHESIS ")") acc))]
+                           (set! ContadorParentesis (- ContadorParentesis 1))
+                           (inner (substring str 1) (cons (cons PARENTHESIS ")") acc))
+                          ]
                           [(string-prefix? str ") ") 
-                           (inner (substring str 2) (cons (cons PARENTHESIS ")") acc))]
+                           (set! ContadorParentesis (- ContadorParentesis 1))                      
+                           (inner (substring str 2) (cons (cons PARENTHESIS ")") acc))
+                          ]
 
                           [(string-prefix? str "{") 
-                           (inner (substring str 1) (cons (cons BRACE "{") acc))]
+                           (set! ContadorParentesis (+ ContadorBrackets 1))
+                           (inner (substring str 1) (cons (cons BRACE "{") acc))
+                          ]
                           [(string-prefix? str "{ ") 
-                           (inner (substring str 2) (cons (cons BRACE "{") acc))]
+                           (set! ContadorParentesis (+ ContadorBrackets 1))
+                           (inner (substring str 2) (cons (cons BRACE "{") acc))
+                          ]
 
 
                           [(string-prefix? str "}") 
-                           (inner (substring str 1) (cons (cons BRACE "}") acc))]
+                           (set! ContadorParentesis (- ContadorBrackets 1))
+                           (inner (substring str 1) (cons (cons BRACE "}") acc))
+                          ]
                           [(string-prefix? str "} ") 
-                           (inner (substring str 2) (cons (cons BRACE "}") acc))]
+                           (set! ContadorParentesis (- ContadorBrackets 1))
+                           (inner (substring str 2) (cons (cons BRACE "}") acc))
+                          ]
 
                           [(string-prefix? str "; ") 
-                           (inner (substring str 2) (cons (cons DELIMITER "}") acc))]
+                           (inner (substring str 2) (cons (cons DELIMITER ";") acc))
+                          ]
                           [(string-prefix? str ";") 
-                           (inner (substring str 1) (cons (cons DELIMITER "}") acc))]
+                           (inner (substring str 1) (cons (cons DELIMITER ";") acc))
+                          ]
 
 
                           [(string-prefix? str "!= ") 
@@ -153,9 +175,14 @@
                               (inner (substring str identifier-end) (cons (cons IDENTIFIER identifier) acc)) ; Llamamos a la función 'inner' de forma recursiva, proporcionando una subcadena de 'str' que comienza en 'identifier-end' y agregando el identificador a la lista de tokens 'acc'.
                             )
                             ]
-                             )))]
-                              (inner str '())))
+                             )))]                              
+                            (inner str '())))
 
+(define (lexicAnalizer tokens)
+    (for-each (lambda (token)
+              (printf "~a ~a~n" (car token) (cdr token)))
+    tokens)
+)
 
 ; Función para generar HTML a partir de tokens
 ; Esta función toma una lista de tokens y la convierte en un string de HTML.
@@ -181,11 +208,15 @@
 ; Función principal
 (define (main)
   (let* [(input (file->string "entrada.txt"))] ; Lee el archivo de entrada en un string.
-    (printf "Texto de entrada:\n~a\n" input) ; Imprime el texto de entrada.
+    ;(printf "Texto de entrada:\n~a\n" input) ; Imprime el texto de entrada.
     (let [(tokens (tokenize input))] ; Tokeniza el string de entrada.
       (print-tokens tokens) ; Imprime los tokens.
-      (let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
-        (call-with-output-file "output.html" ; Abre el archivo de salida.
-          (lambda (out) (display output out))))))) ; Escribe el HTML en el archivo de salida.
+      (void)
+      ;(print tokens) ; Imprime el string de entrada
+      ;(print (car (car tokens)))
+      ;(let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
+      ;  (call-with-output-file "output.html" ; Abre el archivo de salida.
+      ;    (lambda (out) (display output out))))
+      ))) ; Escribe el HTML en el archivo de salida.
 
 (main) ; Ejecuta la función principal.
