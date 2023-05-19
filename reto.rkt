@@ -284,9 +284,9 @@
         (let ((nuevo_indice (es_D tokens indice))) ; Definimos la variable nuevo_indice la cual toma el ultimo indice usado por es_D
               (if (number? nuevo_indice) ; Verificamos si el indice que me dio es_D es un número ya que si no lo es es porque devolvió falso
                   (es_LD tokens nuevo_indice) ; Si es_D fue exitoso, intentamos analizar el resto de los tokens como una lista de declaraciones (LD)
-                  #f ; Si es_D no fue exitoso, devolvemos falso.
+                  nuevo_indice ; Si es_D no fue exitoso, devolvemos falso.
               )
-            )
+        )
       ]
   )
 )
@@ -320,6 +320,7 @@
 
 ;;; DV → ("let" | "const") I "=" E
 (define (es_DV tokens indice)
+  ;(display (car (list-ref tokens (+ indice 1))))
   (if (>= indice (length tokens)) ; Verificamos si se sobrepasa la longitud
     (begin (display "hola")#f)
     ; Si hay más tokens para analizar, extraemos el tipo y el valor del token en el índice actual.
@@ -328,16 +329,16 @@
         (token-type (car (list-ref tokens indice))) ; Guardamos el tipo de token
         (token-value (cdr (list-ref tokens indice))) ; Guardamos el valor del token
       )
-      ;(display (eq? (vector-ref tokens (+ indice 1)) 'type) IDENTIFIER))
+      ;(display (eq? (car (list-ref tokens (+ indice 1))) IDENTIFIER))
         
       ; También verificamos si el siguiente token es un IDENTIFIER y si el token después de ese es un OPERATOR con valor "=".
       ; Si todas estas condiciones se cumplen, entonces tenemos el comienzo de una declaración de variable.
       (if (and 
         (eq? token-type KEYWORD) ; Primero verificamos que el token sea de tipo KEYWORD
         (or (string=? token-value "let") (string=? token-value "const")) ; Luego verificamos si el valor del token es let o const
-        (eq? (vector-ref tokens (+ indice 1) 'type) IDENTIFIER) ; Luego verificamos si hay un identificador
-        (eq? (vector-ref tokens (+ indice 2) 'type) OPERATOR) ; Posteriormente debe de haber un operador
-        (string=? (vector-ref tokens (+ indice 2) 'value) "=")
+        (eq? (car (list-ref tokens (+ indice 1))) IDENTIFIER) ; Luego verificamos si hay un identificador
+        (eq? (car (list-ref tokens (+ indice 2))) OPERATOR); Posteriormente debe de haber un operador
+        (string=? (cdr (list-ref tokens (+ indice 2))) "=")
         ) ; Y este operador debe ser el operador igual
 
         ; Si las condiciones se cumplen, llamamos a la función es_E para analizar la expresión que sigue.
@@ -345,7 +346,7 @@
         (es_E tokens (+ indice 3))
         ; Si alguna de las condiciones no se cumple, los tokens no forman una declaración de variable válida,
         ; por lo que devolvemos #f.
-        (begin (display "adios")#f)
+        #f
 
       )
     )
@@ -357,6 +358,7 @@
 ;;; E → N | I | "(" E ")"
 
 (define (es_E tokens indice)
+
   (cond ; Ejecutamos el condicional para saber si se cumple alguno de los criterios
     ((>= indice (length tokens)) #f)   ;; No hay más tokens por lo que se devuleve que es falso
     ((equal? (car (list-ref tokens indice)) NUMBER) (+ indice 1))  ; Puede ser un numero
