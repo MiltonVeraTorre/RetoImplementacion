@@ -355,16 +355,19 @@
 
 (define (es_E tokens indice)
   (cond ; Ejecutamos el condicional para saber si se cumple alguno de los criterios
-        ((>= indice (length tokens)) #f)   ;; No hay más tokens por lo que se devuleve que es falso
-        ((equal? (car (list-ref tokens indice)) NUMBER) (+ indice 1))  ; Puede ser un numero
-        ((equal? (car (list-ref tokens indice)) IDENTIFIER) (+ indice 1))  ;; Puede ser un identificador
-        ((and ; El utlimo caso es en el que este envuelto en parentesis
-
-              (equal? (cdr (list-ref tokens indice)) "(")  ;; En caso de que no sea uno de los anteriores entonces puede ser una expresión en parentesis
-              (es_E tokens (+ indice 1)) ;; 
-              (equal? (cdr (list-ref tokens (+ indice 2))) ")"))
-         (+ indice 3))
-        (else #f)))
+    ((>= indice (length tokens)) #f)   ;; No hay más tokens por lo que se devuleve que es falso
+    ((equal? (car (list-ref tokens indice)) NUMBER) (+ indice 1))  ; Puede ser un numero
+    ((equal? (car (list-ref tokens indice)) IDENTIFIER) (+ indice 1))  ;; Puede ser un identificador
+    ((and ; El utlimo caso es en el que este envuelto en parentesis
+      (equal? (cdr (list-ref tokens indice)) "(")  ;; En caso de que no sea uno de los anteriores entonces puede ser una expresión en parentesis
+      (es_E tokens (+ indice 1)) ;; 
+      (equal? (cdr (list-ref tokens (+ indice 2))) ")"))
+      
+      (+ indice 3)
+    )
+    (else #f)
+  )
+)
 
 ; es_C: vector indice -> numero / #f
 ;;; C → "for" "(" DV O ";" O ")" "{" LD "}"
