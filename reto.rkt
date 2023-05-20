@@ -296,21 +296,33 @@
 ; Un D puede ser un DV (declaración de variable), un F (función), un C (ciclo), o un COM (comentario).
 ; Devuelve el índice del token después de la D, o #f si los tokens no forman una D válida.
 
-;;; D → DV | F | C | COM
+;;; D → DV | C | COM
 (define (es_D tokens indice)
   (print (list-ref  tokens indice ))
   (if (>= indice (length tokens)) ; Verificamos si la longitud es mayor que la de la lista
     #f
     (case (car (list-ref tokens indice)) ; Verificamos si se cumple alguno de los casos definidos en la gramatica
-      ((keyword) (es_DV tokens indice)) ;Verificamos si de trata de una declaración de una variable
-      ((IDENTIFIER) (es_F tokens (+ indice 1))) ; Verificamos si se trata de una función
-      ((number) (es_C tokens (+ indice 1))) ; Verificamos si se trata de un ciclo
+      ((keyword) (es_IK tokens indice)) ;Verificamos si de trata de una declaración de una variable
+      ;((IDENTIFIER) (es_F tokens (+ indice 1))) ; Verificamos si se trata de una función
+      ;((number) (es_C tokens (+ indice 1))) ; Verificamos si se trata de un ciclo
       ((comment) (es_COM tokens  indice )) ; Verificamos si se trata de un comentario
       ((newline) (es_D tokens (+ indice 1)))
       (else #f)
     )
   )
 ) ; Si no se identifica ninguno de los casos devolvemos que es falso y no se encontró una declaración valida
+
+;Identify Keyword identifica que tipo de keyword es
+;IK -> DV | F | C
+(define (es_IK tokens indice)
+  (display "entro")
+ (case (cdr (list-ref tokens indice))
+    ((or "let" "const")  (es_DV tokens indice))
+    (("function")  (es_F tokens indice))
+    ((or "for" "while")  (es_C tokens indice))
+    (else #f)
+ )
+)
 
 
 ; es_DV: vector indice -> numero / #f
@@ -322,15 +334,13 @@
 (define (es_DV tokens indice)
   ;(display (car (list-ref tokens (+ indice 1))))
   (if (>= indice (length tokens)) ; Verificamos si se sobrepasa la longitud
-    (begin (display "hola")#f)
+    #f
     ; Si hay más tokens para analizar, extraemos el tipo y el valor del token en el índice actual.
     (let 
       (
         (token-type (car (list-ref tokens indice))) ; Guardamos el tipo de token
         (token-value (cdr (list-ref tokens indice))) ; Guardamos el valor del token
-      )
-      ;(display (eq? (car (list-ref tokens (+ indice 1))) IDENTIFIER))
-        
+      ) 
       ; También verificamos si el siguiente token es un IDENTIFIER y si el token después de ese es un OPERATOR con valor "=".
       ; Si todas estas condiciones se cumplen, entonces tenemos el comienzo de una declaración de variable.
       (if (and 
@@ -358,11 +368,19 @@
 ;;; E → N | I | "(" E ")"
 
 (define (es_E tokens indice)
-
+  
   (cond ; Ejecutamos el condicional para saber si se cumple alguno de los criterios
     ((>= indice (length tokens)) #f)   ;; No hay más tokens por lo que se devuleve que es falso
-    ((equal? (car (list-ref tokens indice)) NUMBER) (+ indice 1))  ; Puede ser un numero
+    ((equal? (car (list-ref tokens indice)) NUMBER) (if (number? (es_OP tokens (+ indice 1)))
+                                                         (es_E tokens (+ indice 2)) 
+                                                        (+ indice 1)
+                                                    )
+    )  ; Puede ser un numero
     ((equal? (car (list-ref tokens indice)) IDENTIFIER) (+ indice 1))  ;; Puede ser un identificador
+    ((and 
+      (equal? (car (list-ref tokens indice)) OPERATOR )
+      (not (equal? (car (list-ref tokens (+ indice 1))) OPERATOR))
+    ) (+ indice 1))
     ((and ; El utlimo caso es en el que este envuelto en parentesis
       (equal? (cdr (list-ref tokens indice)) "(")  ;; En caso de que no sea uno de los anteriores entonces puede ser una expresión en parentesis
       (es_E tokens (+ indice 1)) ;; 
@@ -379,6 +397,7 @@
 
 ;; es_C: lista indice -> numero / #f
 (define (es_C tokens indice)
+  
   (if (and (>= indice (- (length tokens) 8))  ;; Nos aseguramos de que hay suficientes tokens
            (equal? (cdr (list-ref tokens indice)) "for")
            (equal? (cdr (list-ref tokens (+ indice 1))) "(")
@@ -398,17 +417,13 @@
 ;;; COM → "//" I
 
 (define (es_COM tokens indice)
-  (display  (<= indice (- (length tokens) 1))) 
+  ;(display  (<= indice (- (length tokens) 1))) 
   (if (and (<= indice (- (length tokens) 1))
            (regexp-match? #"//.*" (cdr (list-ref tokens indice)))
            ;(equal? (car (list-ref tokens (+ indice 1))) IDENTIFIER)
       )
-      (begin
-        (display "funciona aca")
-        (+ indice 1)
-      )
-
-       (begin (display "hola") #f)
+      (+ indice 1)
+      #f
 
       
   )
@@ -433,7 +448,7 @@
 (define (es_OP tokens indice)
   (if 
     (and 
-      (>= indice (length tokens))
+      (<= indice (length tokens))
       (equal? (car (list-ref tokens indice)) OPERATOR)
     )
     (+ indice 1)
