@@ -272,9 +272,10 @@
     (cons KEYWORD "return") (cons IDENTIFIER "a") (cons OPERATOR "+") (cons IDENTIFIER "b") (cons NEWLINE "\r\n") 
     (cons RIGHT_BRACE "}") (cons NEWLINE "\r\n") 
     (cons NEWLINE "\r\n") 
-    (cons CICLE_KEYWORD "while") (cons LEFT_PARENTHESIS "(") (cons IDENTIFIER "a") (cons OPERATOR ">") (cons NUMBER "2") (cons RIGHT_PARENTHESIS ")") (cons LEFT_BRACE "{") (cons NEWLINE "\r\n") 
-    (cons VARIABLE_KEYWORD "let") (cons IDENTIFIER "z") (cons OPERATOR "=") (cons IDENTIFIER "z") (cons OPERATOR "+") (cons IDENTIFIER "a") (cons NEWLINE "\r\n") 
-    (cons RIGHT_BRACE "}") 
+
+    ;(cons CICLE_KEYWORD "while") (cons LEFT_PARENTHESIS "(") (cons IDENTIFIER "a") (cons OPERATOR ">") (cons NUMBER "2") (cons RIGHT_PARENTHESIS ")") (cons LEFT_BRACE "{") (cons NEWLINE "\r\n") 
+    ;(cons VARIABLE_KEYWORD "let") (cons IDENTIFIER "z") (cons OPERATOR "=") (cons IDENTIFIER "z") (cons OPERATOR "+") (cons IDENTIFIER "a") (cons NEWLINE "\r\n") 
+    ;(cons RIGHT_BRACE "}") 
     (cons NEWLINE "\r\n") 
     (cons NEWLINE "\r\n")
     ))
