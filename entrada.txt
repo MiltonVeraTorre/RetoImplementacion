@@ -4,10 +4,11 @@ let a = 5
 let b = 10 
 let c = 30 * 20 
 
-function prueba (a , b ){
+function prueba ( ) {
+    let d = 1
     return a + b 
 }
- 
+
 for(let i = 5 ; i < 5 ; i = i + 1 ){ 
     // Este codigo es importante 
     let c = 3 

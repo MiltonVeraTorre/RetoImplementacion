@@ -59,6 +59,9 @@
 (define LEFT_BRACE 'left_brace)
 (define RIGHT_BRACE 'right_brace)
 
+(define function_active #f)
+(define cicle_active #f)
+
 
 ;;;;;;;;;;;;;;;;;; TOKENIZADOR ;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -299,27 +302,33 @@
 ;;; D → DV | C | COM
 (define (es_D tokens indice)
   (print (list-ref  tokens indice ))
-  (if (>= indice (length tokens)) ; Verificamos si la longitud es mayor que la de la lista
-    #f
+  (if (<= indice (length tokens)) ; Verificamos si la longitud es mayor que la de la lista
     (case (car (list-ref tokens indice)) ; Verificamos si se cumple alguno de los casos definidos en la gramatica
       ((keyword) (es_IK tokens indice)) ;Verificamos si de trata de una declaración de una variable
       ;((IDENTIFIER) (es_F tokens (+ indice 1))) ; Verificamos si se trata de una función
       ;((number) (es_C tokens (+ indice 1))) ; Verificamos si se trata de un ciclo
+      ((right_brace) (if (or (equal? function_active #t) (equal? cicle_active #t))
+                        (+ indice 1)
+                        #f
+                     )
+      )
       ((comment) (es_COM tokens  indice )) ; Verificamos si se trata de un comentario
       ((newline) (es_D tokens (+ indice 1)))
       (else #f)
     )
+    #f
   )
 ) ; Si no se identifica ninguno de los casos devolvemos que es falso y no se encontró una declaración valida
 
 ;Identify Keyword identifica que tipo de keyword es
 ;IK -> DV | F | C
 (define (es_IK tokens indice)
-  (display "entro")
  (case (cdr (list-ref tokens indice))
     ((or "let" "const")  (es_DV tokens indice))
     (("function")  (es_F tokens indice))
     ((or "for" "while")  (es_C tokens indice))
+    (("return")  (es_E tokens (+ indice 1)))
+
     (else #f)
  )
 )
@@ -368,19 +377,21 @@
 ;;; E → N | I | "(" E ")"
 
 (define (es_E tokens indice)
+  ;(println  (cdr (list-ref tokens indice)))
   
   (cond ; Ejecutamos el condicional para saber si se cumple alguno de los criterios
     ((>= indice (length tokens)) #f)   ;; No hay más tokens por lo que se devuleve que es falso
     ((equal? (car (list-ref tokens indice)) NUMBER) (if (number? (es_OP tokens (+ indice 1)))
-                                                         (es_E tokens (+ indice 2)) 
+                                                         (es_E tokens (+ indice 2))
                                                         (+ indice 1)
                                                     )
+                                                    
     )  ; Puede ser un numero
-    ((equal? (car (list-ref tokens indice)) IDENTIFIER) (+ indice 1))  ;; Puede ser un identificador
-    ((and 
-      (equal? (car (list-ref tokens indice)) OPERATOR )
-      (not (equal? (car (list-ref tokens (+ indice 1))) OPERATOR))
-    ) (+ indice 1))
+    ((equal? (car (list-ref tokens indice)) IDENTIFIER) (if (number? (es_OP tokens (+ indice 1)))
+                                                         (es_E tokens (+ indice 2))
+                                                        (+ indice 1)
+                                                        )
+    )  ;; Puede ser un identificador
     ((and ; El utlimo caso es en el que este envuelto en parentesis
       (equal? (cdr (list-ref tokens indice)) "(")  ;; En caso de que no sea uno de los anteriores entonces puede ser una expresión en parentesis
       (es_E tokens (+ indice 1)) ;; 
@@ -446,6 +457,7 @@
 ;;; OP → "+" | "-" | "*" | "/" | "==" | "<" | ">" | "!="
 
 (define (es_OP tokens indice)
+  ;(println  (car (list-ref tokens (+ indice 1))))
   (if 
     (and 
       (<= indice (length tokens))
@@ -463,28 +475,34 @@
 (define (es_F tokens indice)
   (if 
     (and 
-      (>= indice (- (length tokens) 7))  ;; Nos aseguramos de que hay suficientes tokens
-      (equal? (cdr (list-ref tokens indice)) "function")
+      (<= indice (- (length tokens) 7))  ;; Nos aseguramos de que hay suficientes tokens
+      ;(equal? (cdr (list-ref tokens indice)) "function")
       (equal? (car (list-ref tokens (+ indice 1))) IDENTIFIER)
       (equal? (cdr (list-ref tokens (+ indice 2))) "(")
     )
-    (let* (
-      (nuevo_indice (es_LI tokens (+ indice 3)))
+    ( let* (
+      (nuevo_indice (es_Par tokens (+ indice 3)))
+
       (nuevo_indice_2 
         (if 
           (and 
           (number? nuevo_indice)
           (equal? (cdr (list-ref tokens nuevo_indice)) ")")
           (equal? (cdr (list-ref tokens (+ nuevo_indice 1))) "{")
+          (equal? function_active #f)
           )
-          (es_LD tokens (+ nuevo_indice 2))
+  
+          (begin (set! function_active #t) (es_LD tokens (+ nuevo_indice 2)))
           #f
         )
       ))
       (if (and (number? nuevo_indice_2)
         (equal? (cdr (list-ref tokens nuevo_indice_2)) "}")
         )
-        (+ nuevo_indice_2 1)
+        (begin 
+              (set! function_active #f)  
+               (+ nuevo_indice_2 1)
+        )
         #f
       )
     )
@@ -492,6 +510,25 @@
   )
 )
 
+;; es_Par insercion de parametros
+(define (es_Par tokens indice)
+
+  (cond 
+    ((>= indice (length tokens)) indice)
+    ((and 
+          (equal? (car (list-ref tokens indice )) IDENTIFIER)
+          (not(equal? (car (list-ref tokens (+ indice 1) )) IDENTIFIER))
+          (equal? (car (list-ref tokens (+ indice 1) )) SEPARATOR)
+     ) (es_Par tokens (+ indice 2))
+    )
+    ((and 
+          (equal? (car (list-ref tokens indice )) IDENTIFIER)
+          (not(equal? (car (list-ref tokens (+ indice 1) )) IDENTIFIER))
+     ) (+ indice 1)
+    )
+    (else indice)
+  )
+)
 ;; es_LI: vector indice -> numero / #f
 ;;; LI → I "," LI | ε
 
