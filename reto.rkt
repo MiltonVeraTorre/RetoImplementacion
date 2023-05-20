@@ -61,6 +61,7 @@
 
 (define function_active #f)
 (define cicle_active #f)
+(define error_found #f)
 
 
 ;;;;;;;;;;;;;;;;;; TOKENIZADOR ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -265,7 +266,8 @@
 
 ;;; P → LD
 (define (es_P tokens indice)
-  (if (>= indice (length tokens)); Si el indice es mayor a la longitud de la lista devolvemos que es falso
+  (display (length tokens))
+  (if (> indice (length tokens)); Si el indice es mayor a la longitud de la lista devolvemos que es falso
       #f
       (es_LD tokens indice) ; En caso de que siga estando en la longitud valida pasamos los tokens y el indice inicial
   )
@@ -282,10 +284,18 @@
   (cond 
       ; Si el indice es mayor que el numero de tokens, entonces hemos alcanzado el final y devolvemos el índice actual.
       [(>= indice (length tokens)) indice]
+      ((equal? error_found #t) indice)
+      ((equal? function_active #t)  (let ((nuevo_indice (es_D tokens indice))) ; Definimos la variable nuevo_indice la cual toma el ultimo indice usado por es_D              
+                                          (if (equal? function_active #f ) ; Verificamos si el indice que me dio es_D es un número ya que si no lo es es porque devolvió falso
+                                              nuevo_indice ; Si es_D fue exitoso, intentamos analizar el resto de los tokens como una lista de declaraciones (LD)
+                                              (es_LD tokens nuevo_indice) ; Si es_D no fue exitoso, devolvemos falso.
+                                          )
+                                      )  
+      )
       ; Si no hemos alcanzado el final, intentamos analizar una declaración (D).
       [else 
-        (let ((nuevo_indice (es_D tokens indice))) ; Definimos la variable nuevo_indice la cual toma el ultimo indice usado por es_D
-              (if (number? nuevo_indice) ; Verificamos si el indice que me dio es_D es un número ya que si no lo es es porque devolvió falso
+        (let ((nuevo_indice (es_D tokens indice))) ; Definimos la variable nuevo_indice la cual toma el ultimo indice usado por es_D              
+              (if (and (number? nuevo_indice) (equal? error_found #f) ) ; Verificamos si el indice que me dio es_D es un número ya que si no lo es es porque devolvió falso
                   (es_LD tokens nuevo_indice) ; Si es_D fue exitoso, intentamos analizar el resto de los tokens como una lista de declaraciones (LD)
                   nuevo_indice ; Si es_D no fue exitoso, devolvemos falso.
               )
@@ -301,22 +311,19 @@
 
 ;;; D → DV | C | COM
 (define (es_D tokens indice)
-  (print (list-ref  tokens indice ))
-  (if (<= indice (length tokens)) ; Verificamos si la longitud es mayor que la de la lista
+  ;(display (cdr (list-ref tokens indice)))
+
+  (if (and (< indice (length tokens)) (equal? error_found #f)) ; Verificamos si la longitud es mayor que la de la lista
     (case (car (list-ref tokens indice)) ; Verificamos si se cumple alguno de los casos definidos en la gramatica
       ((keyword) (es_IK tokens indice)) ;Verificamos si de trata de una declaración de una variable
       ;((IDENTIFIER) (es_F tokens (+ indice 1))) ; Verificamos si se trata de una función
       ;((number) (es_C tokens (+ indice 1))) ; Verificamos si se trata de un ciclo
-      ((right_brace) (if (or (equal? function_active #t) (equal? cicle_active #t))
-                        (+ indice 1)
-                        #f
-                     )
-      )
+      ((right_brace) (set! function_active #f) (+ indice 1) )
       ((comment) (es_COM tokens  indice )) ; Verificamos si se trata de un comentario
       ((newline) (es_D tokens (+ indice 1)))
-      (else #f)
+      (else indice)
     )
-    #f
+    indice
   )
 ) ; Si no se identifica ninguno de los casos devolvemos que es falso y no se encontró una declaración valida
 
@@ -325,11 +332,11 @@
 (define (es_IK tokens indice)
  (case (cdr (list-ref tokens indice))
     ((or "let" "const")  (es_DV tokens indice))
-    (("function")  (es_F tokens indice))
+    (("function")  (if (equal? function_active #f) (es_F tokens indice) (begin (set! error_found #t)indice)))
     ((or "for" "while")  (es_C tokens indice))
     (("return")  (es_E tokens (+ indice 1)))
 
-    (else #f)
+    (else indice)
  )
 )
 
@@ -342,8 +349,8 @@
 ;;; DV → ("let" | "const") I "=" E
 (define (es_DV tokens indice)
   ;(display (car (list-ref tokens (+ indice 1))))
-  (if (>= indice (length tokens)) ; Verificamos si se sobrepasa la longitud
-    #f
+  (if (> indice (length tokens)) ; Verificamos si se sobrepasa la longitud
+    indice
     ; Si hay más tokens para analizar, extraemos el tipo y el valor del token en el índice actual.
     (let 
       (
@@ -365,7 +372,7 @@
         (es_E tokens (+ indice 3))
         ; Si alguna de las condiciones no se cumple, los tokens no forman una declaración de variable válida,
         ; por lo que devolvemos #f.
-        #f
+        indice
 
       )
     )
@@ -377,18 +384,17 @@
 ;;; E → N | I | "(" E ")"
 
 (define (es_E tokens indice)
-  ;(println  (cdr (list-ref tokens indice)))
-  
+
   (cond ; Ejecutamos el condicional para saber si se cumple alguno de los criterios
-    ((>= indice (length tokens)) #f)   ;; No hay más tokens por lo que se devuleve que es falso
-    ((equal? (car (list-ref tokens indice)) NUMBER) (if (number? (es_OP tokens (+ indice 1)))
-                                                         (es_E tokens (+ indice 2))
+    ((> indice (length tokens)) indice)   ;; No hay más tokens por lo que se devuleve que es falso
+    ((equal? (car (list-ref tokens indice)) NUMBER) (if (not (equal? (es_OP tokens (+ indice 1)) indice))
+                                                        (es_E tokens (+ indice 2))
                                                         (+ indice 1)
                                                     )
                                                     
     )  ; Puede ser un numero
     ((equal? (car (list-ref tokens indice)) IDENTIFIER) (if (number? (es_OP tokens (+ indice 1)))
-                                                         (es_E tokens (+ indice 2))
+                                                        (es_E tokens (+ indice 2))
                                                         (+ indice 1)
                                                         )
     )  ;; Puede ser un identificador
@@ -399,7 +405,7 @@
       
       (+ indice 3)
     )
-    (else #f)
+    (else  indice)
   )
 )
 
@@ -408,21 +414,16 @@
 
 ;; es_C: lista indice -> numero / #f
 (define (es_C tokens indice)
-  
-  (if (and (>= indice (- (length tokens) 8))  ;; Nos aseguramos de que hay suficientes tokens
-           (equal? (cdr (list-ref tokens indice)) "for")
-           (equal? (cdr (list-ref tokens (+ indice 1))) "(")
-           (number? (es_DV tokens (+ indice 2)))
-           (equal? (cdr (list-ref tokens (+ indice 3))) ";")
-           (number? (es_O tokens (+ indice 4)))
-           (equal? (cdr (list-ref tokens (+ indice 5))) ";")
-           (number? (es_O tokens (+ indice 6)))
-           (equal? (cdr (list-ref tokens (+ indice 7))) ")")
-           (equal? (cdr (list-ref tokens (+ indice 8))) "{")
-           (number? (es_LD tokens (+ indice 9)))
-           (equal? (cdr (list-ref tokens (+ indice 10))) "}"))
-      (+ indice 11)
-      #f))
+  (set! cicle_active #t)
+
+  (print  (es_LD tokens (+ (es_O tokens (+ (es_O tokens (+ (es_DV tokens (+ indice 2)) 1) ) 1 )) 2 )))
+        
+  (cond 
+    ((>= indice (- (length tokens) 8)) indice)
+  )
+  (set! cicle_active #f)
+)  
+      
 
 ; es_COM : vector indice -> numero / #f
 ;;; COM → "//" I
@@ -434,9 +435,7 @@
            ;(equal? (car (list-ref tokens (+ indice 1))) IDENTIFIER)
       )
       (+ indice 1)
-      #f
-
-      
+      #f      
   )
 )
 
@@ -445,26 +444,30 @@
 
 (define (es_O tokens indice)
 
+
   (let ((nuevo_indice (es_E tokens indice)))
     (if (and (number? nuevo_indice)
-             (>= nuevo_indice (- (length tokens) 1))
-             (equal? (car (list-ref tokens nuevo_indice)) OPERATOR)
-             (number? (es_E tokens (+ nuevo_indice 1))))
-        (+ nuevo_indice 2)
-        #f)))
+             (<= nuevo_indice (- (length tokens) 1))
+             (or (equal? (car (list-ref tokens nuevo_indice)) SEMICOLON) (equal? (car (list-ref tokens nuevo_indice)) RIGHT_PARENTHESIS))
+        )
+        nuevo_indice
+        indice
+    )
+  ))
 
 ;; es_OP: vector indice -> numero / #f
 ;;; OP → "+" | "-" | "*" | "/" | "==" | "<" | ">" | "!="
 
 (define (es_OP tokens indice)
   ;(println  (car (list-ref tokens (+ indice 1))))
+  
   (if 
     (and 
-      (<= indice (length tokens))
+      (< indice (length tokens))
       (equal? (car (list-ref tokens indice)) OPERATOR)
     )
     (+ indice 1)
-    #f
+    indice
   )
 )
 
@@ -479,6 +482,7 @@
       ;(equal? (cdr (list-ref tokens indice)) "function")
       (equal? (car (list-ref tokens (+ indice 1))) IDENTIFIER)
       (equal? (cdr (list-ref tokens (+ indice 2))) "(")
+      (equal? function_active #f)
     )
     ( let* (
       (nuevo_indice (es_Par tokens (+ indice 3)))
@@ -492,21 +496,18 @@
           (equal? function_active #f)
           )
   
-          (begin (set! function_active #t) (es_LD tokens (+ nuevo_indice 2)))
-          #f
+          (begin (set! function_active #t)  (es_LD tokens (+ nuevo_indice 2)) )
+          indice
         )
       ))
-      (if (and (number? nuevo_indice_2)
-        (equal? (cdr (list-ref tokens nuevo_indice_2)) "}")
-        )
-        (begin 
-              (set! function_active #f)  
-               (+ nuevo_indice_2 1)
-        )
-        #f
-      )
+      ;(display nuevo_indice_2)
+
+      ;(display function_active)
+      (set! function_active #f) 
+      nuevo_indice_2 
+
     )
-  #f
+  indice
   )
 )
 
