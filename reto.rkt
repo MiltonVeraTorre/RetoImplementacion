@@ -268,7 +268,7 @@
 
 ;;; P → LD
 (define (es_P tokens indice)
-  (display (length tokens))
+  ;(display (length tokens))
   (if (> indice (length tokens)); Si el indice es mayor a la longitud de la lista devolvemos que es falso
       #f
       (es_LD tokens indice) ; En caso de que siga estando en la longitud valida pasamos los tokens y el indice inicial
@@ -377,7 +377,7 @@
         (es_E tokens (+ indice 3))
         ; Si alguna de las condiciones no se cumple, los tokens no forman una declaración de variable válida,
         ; por lo que devolvemos #f.
-        indice
+        (begin (set! error_found #t) indice)
 
       )
     )

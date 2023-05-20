@@ -3,8 +3,3 @@
 let a = 5
 let b = 10 
 let c = 30 * 20 
-
-function prueba ( ) {
-    let d = 1
-    return a + b 
-}
