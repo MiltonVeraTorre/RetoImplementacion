@@ -19,7 +19,7 @@ text{
 .comment{
     color:gray
 }
-.keyword{
+.keyword,.function_keyword,.variable_keyword,.cicle_keyword{
     color:red;
 }
 .left_parenthesis,

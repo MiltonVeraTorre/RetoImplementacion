@@ -45,6 +45,12 @@
 ; Cada uno de estos representa un tipo diferente de token en el lenguaje que estamos analizando.
 (define COMMENT 'comment)
 (define KEYWORD 'keyword)
+
+(define FUNCTION_KEYWORD 'function_keyword)
+(define VARIABLE_KEYWORD 'variable_keyword)
+(define CICLE_KEYWORD 'cicle_keyword)
+
+
 (define IDENTIFIER 'identifier)
 (define OPERATOR 'operator)
 (define NUMBER 'number)
@@ -132,13 +138,6 @@
                              )
                              ] 
 
-                          ; Si el string comienza con una palabra clave "let", "const", "function", "for", generamos un token KEYWORD y llamamos a inner de nuevo
-                          [(string-prefix? str "let ") ; string-prefix? devuelve #t si el string comienza con el substring que le pasamos
-                           (inner 
-                                  (substring str 4)  ; Esto extrae una subcadena de 'str' empezando desde el cuarto índice (0-based), esencialmente eliminando "let " del inicio del string
-                                  (cons (cons KEYWORD "let") acc)  ; Crea una nueva pareja donde el primer elemento es otra pareja (KEYWORD "let") y el segundo elemento es 'acc', que es el acumulador que almacena los tokens generados hasta ahora.
-                            )
-                          ] 
 
                           [(regexp-match? #rx"^[0-9]" str) 
                             (let* 
@@ -158,15 +157,22 @@
                             )
                           ]
 
+                          ; Si el string comienza con una palabra clave "let", "const", "function", "for", generamos un token KEYWORD y llamamos a inner de nuevo
+                          [(string-prefix? str "let ") ; string-prefix? devuelve #t si el string comienza con el substring que le pasamos
+                           (inner 
+                                  (substring str 4)  ; Esto extrae una subcadena de 'str' empezando desde el cuarto índice (0-based), esencialmente eliminando "let " del inicio del string
+                                  (cons (cons VARIABLE_KEYWORD "let") acc)  ; Crea una nueva pareja donde el primer elemento es otra pareja (KEYWORD "let") y el segundo elemento es 'acc', que es el acumulador que almacena los tokens generados hasta ahora.
+                            )
+                          ] 
 
                           [(string-prefix? str "const ") 
-                           (inner (substring str 6) (cons (cons KEYWORD "const") acc))]
+                           (inner (substring str 6) (cons (cons VARIABLE_KEYWORD "const") acc))]
                           [(string-prefix? str "function ") 
-                           (inner (substring str 9) (cons (cons KEYWORD "function") acc))]
+                           (inner (substring str 9) (cons (cons FUNCTION_KEYWORD "function") acc))]
                           [(string-prefix? str "for") 
-                           (inner (substring str 3) (cons (cons KEYWORD "for") acc))]
+                           (inner (substring str 3) (cons (cons CICLE_KEYWORD "for") acc))]
                           [(string-prefix? str "while") 
-                           (inner (substring str 5) (cons (cons KEYWORD "while") acc))]
+                           (inner (substring str 5) (cons (cons CICLE_KEYWORD "while") acc))]
                           [(string-prefix? str "return") 
                            (inner (substring str 6) (cons (cons KEYWORD "return") acc))]
 
