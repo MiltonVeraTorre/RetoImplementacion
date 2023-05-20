@@ -8,17 +8,3 @@ function prueba ( ) {
     let d = 1
     return a + b 
 }
-
-for(let i = 5 ; i < 5 ; i = i + 1 ){ 
-    // Este codigo es importante 
-    let c = 3 
-    c = i + 3 
-
-} 
-
-
-
-while(a > 2 ){
-    let z = z + a 
-}
-

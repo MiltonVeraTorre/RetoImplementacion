@@ -58,6 +58,8 @@
 
 (define LEFT_BRACE 'left_brace)
 (define RIGHT_BRACE 'right_brace)
+(define ERROR 'error)
+
 
 (define function_active #f)
 (define cicle_active #f)
@@ -316,9 +318,12 @@
   (if (and (< indice (length tokens)) (equal? error_found #f)) ; Verificamos si la longitud es mayor que la de la lista
     (case (car (list-ref tokens indice)) ; Verificamos si se cumple alguno de los casos definidos en la gramatica
       ((keyword) (es_IK tokens indice)) ;Verificamos si de trata de una declaración de una variable
-      ;((IDENTIFIER) (es_F tokens (+ indice 1))) ; Verificamos si se trata de una función
-      ;((number) (es_C tokens (+ indice 1))) ; Verificamos si se trata de un ciclo
-      ((right_brace) (set! function_active #f) (+ indice 1) )
+      ((right_brace)  (cond  
+                          ((equal? cicle_active #t) (set! cicle_active #f) (+ indice 1))
+                          ((and (equal? function_active #t) (equal? cicle_active #f)) (set! function_active #f) (+ indice 1))
+                          (else (set! error_found #t) indice)
+                       )             
+      )
       ((comment) (es_COM tokens  indice )) ; Verificamos si se trata de un comentario
       ((newline) (es_D tokens (+ indice 1)))
       (else indice)
@@ -332,7 +337,7 @@
 (define (es_IK tokens indice)
  (case (cdr (list-ref tokens indice))
     ((or "let" "const")  (es_DV tokens indice))
-    (("function")  (if (equal? function_active #f) (es_F tokens indice) (begin (set! error_found #t)indice)))
+    (("function")  (if (and (equal? function_active #f) (equal? cicle_active #f)) (es_F tokens indice) (begin (set! error_found #t) indice)))
     ((or "for" "while")  (es_C tokens indice))
     (("return")  (es_E tokens (+ indice 1)))
 
@@ -415,12 +420,10 @@
 ;; es_C: lista indice -> numero / #f
 (define (es_C tokens indice)
   (set! cicle_active #t)
-
-  (print  (es_LD tokens (+ (es_O tokens (+ (es_O tokens (+ (es_DV tokens (+ indice 2)) 1) ) 1 )) 2 )))
-        
   (cond 
     ((>= indice (- (length tokens) 8)) indice)
   )
+  (es_LD tokens (+ (es_O tokens (+ (es_O tokens (+ (es_DV tokens (+ indice 2)) 1) ) 1 )) 2 )) 
   (set! cicle_active #f)
 )  
       
@@ -585,6 +588,18 @@
   )
 )
 
+(define (change_toErrors tokens indiceError)
+  (let ((nueva_lista tokens))
+    (print nueva_lista)
+    (if (not(equal? (car (list-ref nueva_lista indiceError) NEWLINE)))
+        (begin (set-mcar! (list-ref nueva_lista indiceError) ERROR)  )
+        (print nueva_lista)
+    )
+  ) 
+
+
+)
+
 ; Función principal
 (define (main)
   (let* 
@@ -592,11 +607,20 @@
     ;(printf "Texto de entrada:\n~a\n" input) ; Imprime el texto de entrada.
     (let [(tokens (tokenize input))] ; Tokeniza el string de entrada.
       ;(print-tokens tokens) ; Imprime los tokens.
-      (print (es_P tokens 0))
-      ;(let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
-      ;  (call-with-output-file "output.html" ; Abre el archivo de salida.
-      ;  (lambda (out) (display output out)))
-      ;)
+        (let ((indice_final (print (es_P tokens 0)) )) ; Definimos la variable nuevo_indice la cual toma el ultimo indice usado por es_D              
+              (if (>= indice_final (length(tokens))) ; Verificamos si el indice que me dio es_D es un número ya que si no lo es es porque devolvió falso
+                  (begin 
+                        (let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
+                          (call-with-output-file "output.html" ; Abre el archivo de salida.
+                         (lambda (out) (display output out)))
+                        )
+                  
+                  ) ; Si termino bien mostramos todo el html)
+                  (change_toErrors tokens indice_final) ; Si no fue exitoso cambiamos los indice que fueron errores con la etiqueta error y mostramos el html
+              )
+        )
+      
+
     )
   )
 ) ; Escribe el HTML en el archivo de salida.
