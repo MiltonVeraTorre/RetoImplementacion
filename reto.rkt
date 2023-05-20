@@ -475,13 +475,19 @@
               (printf "~a ~a~n" (car token) (cdr token)))
             tokens))
 
+(define (check-list-elements lst)
+  (cond ((null? lst) 'done)
+        ((pair? (car lst)) (begin (display "Pair: ") (display (car lst)) (newline) (check-list-elements (cdr lst))))
+        ((list? (car lst)) (begin (display "List: ") (display (car lst)) (newline) (check-list-elements (cdr lst))))
+        (else (begin (display "Other: ") (display (car lst)) (newline) (check-list-elements (cdr lst))))))
+
 ; Función principal
 (define (main)
   (let* 
   [(input (file->string "entrada.txt"))] ; Lee el archivo de entrada en un string.
     ;(printf "Texto de entrada:\n~a\n" input) ; Imprime el texto de entrada.
     (let [(tokens (tokenize input))] ; Tokeniza el string de entrada.
-      (print-tokens tokens) ; Imprime los tokens.
+      (print tokens) ; Imprime los tokens.
       (let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
         (call-with-output-file "output.html" ; Abre el archivo de salida.
           (lambda (out) (display output out))))))) ; Escribe el HTML en el archivo de salida.
