@@ -167,20 +167,29 @@
 
 ;; es_C: lista indice -> numero / #f
 (define (es_C tokens indice)
-  (if (and (>= indice (- (length tokens) 8))  ;; Nos aseguramos de que hay suficientes tokens
-           (equal? (cdr (list-ref tokens indice)) "for")
-           (equal? (cdr (list-ref tokens (+ indice 1))) "(")
-           (number? (es_DV tokens (+ indice 2)))
-           (equal? (cdr (list-ref tokens (+ indice 3))) ";")
-           (number? (es_O tokens (+ indice 4)))
-           (equal? (cdr (list-ref tokens (+ indice 5))) ";")
-           (number? (es_O tokens (+ indice 6)))
-           (equal? (cdr (list-ref tokens (+ indice 7))) ")")
-           (equal? (cdr (list-ref tokens (+ indice 8))) "{")
-           (number? (es_LD tokens (+ indice 9)))
-           (equal? (cdr (list-ref tokens (+ indice 10))) "}"))
-      (+ indice 11)
-      (list #f indice (list-ref tokens indice))))
+  
+      (if (and (equal? (cdr (list-ref tokens indice)) "for")
+               (equal? (cdr (list-ref tokens (+ indice 1))) "("))
+          (let* ((indice-1 (es_DV tokens (+ indice 2)))
+                 (indice-2 (if (and (number? indice-1) (equal? (cdr (list-ref tokens indice-1)) ";"))
+                               (es_O tokens (+ indice-1 1))
+                               #f))
+                 (indice-3 (if (and (number? indice-2) (equal? (cdr (list-ref tokens indice-2)) ";"))
+                               (es_O tokens (+ indice-2 1))
+                               #f))
+                 (indice-4 (if (and (number? indice-3) (equal? (cdr (list-ref tokens indice-3)) ")"))
+                            (if (equal? (cdr (list-ref tokens (+ indice-3 1))) "{")
+                               (es_LD tokens (+ indice-3 2))
+                               (list #f indice (list-ref tokens indice))
+                               )
+                               (list #f indice (list-ref tokens indice))
+                               )))
+            (if (and (number? indice-4) (equal? (cdr (list-ref tokens indice-4)) "}"))
+                (+ indice-4 1)
+                (list #f indice (list-ref tokens indice))))
+          (list #f indice (list-ref tokens indice)))
+      (list #f indice (list-ref tokens indice))
+)
 
 
 ;; es_O: vector indice -> numero / #f
@@ -280,11 +289,11 @@
     (cons NEWLINE "\r\n")
     ))
 
-(print (length tokensEntrada))
+(print (list-ref tokensEntrada 22))
 
-(print (es_P 
-    tokensEntrada
-    0
-    ))
+;;; (print (es_P 
+;;;     tokensEntrada
+;;;     0
+;;;     ))
 
 
