@@ -18,7 +18,11 @@
 ;;; C → "for" "(" DV ";" O ";" AV ")" "{" LD "}"
 
 ;;; F → "function" I "(" LI ")" "{" LD "}"
+
+
 ;;; LI → I "," LI | ε
+
+
 ;;; COM → "//" I
 ;;; I → [a-zA-Z][a-zA-Z0-9]*
 ;;; N → [0-9]+
@@ -268,7 +272,7 @@
 ;;; F → "function" I "(" LI ")" "{" LD "}"
 
 (define (es_F tokens indice)
-  (if (and (>= indice (- (length tokens) 7))  ;; Nos aseguramos de que hay suficientes tokens
+  (if (and 
            (equal? (cdr (list-ref tokens indice)) "function")
            (equal? (car (list-ref tokens (+ indice 1))) IDENTIFIER)
            (equal? (cdr (list-ref tokens (+ indice 2))) "("))
@@ -293,17 +297,23 @@
      (list #f indice (list-ref tokens indice))))
 
 ;; es_LI: vector indice -> numero / #f
-;;; LI → I "," LI | ε
+;;; LI → I ("," LI)* | ε
 
 (define (es_LI tokens indice)
-  (cond ((>= indice (length tokens))(list #f indice (list-ref tokens indice)))  ;; No hay más tokens
-        ((equal? (car (list-ref tokens indice)) IDENTIFIER)  ;; Identificador
-         (if (and (>= indice (- (length tokens) 1))  ;; Hay un token más
-                  (equal? (cdr (list-ref tokens (+ indice 1))) ","))  ;; Y es una coma
-              
-             (es_LI tokens (+ indice 2))  ;; Continuamos con el siguiente identificador
-             (+ indice 1)))  ;; No hay coma, terminamos aquí
-        (else(list #f indice (list-ref tokens indice)))))
+  (if (and (>= indice (length tokens))
+           (not (equal? (car (list-ref tokens indice)) IDENTIFIER)))
+      (list #f indice (list-ref tokens indice)) ; Si no hay más tokens o el token actual no es un identificador, fallamos
+
+      (let loop ((indice_actual indice)) ; Comenzamos un bucle con el índice actual
+        (if (and 
+                 (equal? (car (list-ref tokens indice_actual)) IDENTIFIER) ; El token actual es un identificador
+                 (equal? (cdr (list-ref tokens (+ indice_actual 1))) ",")) ; El siguiente token es una coma
+
+            (loop (+ indice_actual 2)) ; Continuamos con el siguiente identificador
+
+            (if (equal? (car (list-ref tokens indice_actual)) IDENTIFIER) ; Si el token actual es un identificador
+                (+ indice_actual 1) ; terminamos aquí, incrementando el índice en uno
+                (list #f indice (list-ref tokens indice))))))) ; Si el token actual no es un identificador, fallamos
 
 
 (define tokensEntrada  (list 
@@ -328,7 +338,7 @@
     (cons NEWLINE "\r\n") 
     (cons NEWLINE "\r\n") 
     (cons FUNCTION_KEYWORD "function") (cons IDENTIFIER "prueba") (cons LEFT_PARENTHESIS "(") (cons IDENTIFIER "a") (cons SEPARATOR ",") (cons IDENTIFIER "b") (cons RIGHT_PARENTHESIS ")") (cons LEFT_BRACE "{") (cons NEWLINE "\r\n") 
-    (cons KEYWORD "return") (cons IDENTIFIER "a") (cons OPERATOR "+") (cons IDENTIFIER "b") (cons NEWLINE "\r\n") 
+    ; (cons KEYWORD "return") (cons IDENTIFIER "a") (cons OPERATOR "+") (cons IDENTIFIER "b") (cons NEWLINE "\r\n") 
     (cons RIGHT_BRACE "}") (cons NEWLINE "\r\n") 
     (cons NEWLINE "\r\n") 
 
@@ -339,8 +349,8 @@
     (cons NEWLINE "\r\n")
     ))
 
-;(print (list-ref tokensEntrada 47))
-
+;(print (list-ref tokensEntrada 59))
+(print(length tokensEntrada))
 (print (es_P 
     tokensEntrada
     0
