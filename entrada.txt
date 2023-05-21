@@ -1,6 +1,6 @@
 // Aqui hay un comentario
 
-let a = 5 
+let a = 5 let 
 let b = 10 
 let c = 30 + 20 
 

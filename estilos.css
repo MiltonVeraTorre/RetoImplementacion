@@ -33,3 +33,9 @@ text{
 .separator,.semicolon{
     color:brown
 }
+.error{
+    color: red;
+    font-weight: bold;
+    text-decoration: underline;
+    
+}

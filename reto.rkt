@@ -66,6 +66,8 @@
 (define LEFT_BRACE 'left_brace)
 (define RIGHT_BRACE 'right_brace)
 
+(define ERROR 'error)
+
 ;;;;;;;;;;;;;;;;;; TOKENIZADOR ;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Documentación general de la funcion de tokenize(flujo de la funcion)
@@ -630,28 +632,33 @@
                  "</body>\n</html>"))
 
 
+; Leer el archivo
+(define entrada (file->string "entrada.txt"))
+; Guardar resultado de tokenizacion en una variable
+(define tokens (tokenize entrada))
+; Guardar el resultado del analisis de gramatica de la tokenizacion
+(define resultado (es_P tokens 0))
+; Analizar si el resultado del analisis de gramatica es una lista o un numero
+    ; Si es un numero desplegar en consola Gramatica correcta
+    ; Si es una lista remplazar el token del par por un token de error
 
-; Función para imprimir tokens
-(define (print-tokens tokens)
-  (for-each (lambda (token)
-              (printf "~a ~a~n" (car token) (cdr token)))
-            tokens))
+(if (number? resultado)
+    (print "Gramatica correcta")
+    (if (and (list? resultado) (>= (length resultado) 3)) 
+        (begin
+            (set! tokens (list-set tokens (cadr resultado) (cons ERROR (cdr (caddr resultado)))))
+            (print "Gramatica incorrecta")
+        )
+        (print "Resultado desconocido")
+    ))
 
-(define (check-list-elements lst)
-  (cond ((null? lst) 'done)
-        ((pair? (car lst)) (begin (display "Pair: ") (display (car lst)) (newline) (check-list-elements (cdr lst))))
-        ((list? (car lst)) (begin (display "List: ") (display (car lst)) (newline) (check-list-elements (cdr lst))))
-        (else (begin (display "Other: ") (display (car lst)) (newline) (check-list-elements (cdr lst))))))
+; Desplegar el resultado con la funcion del html
 
 ; Función principal
-(define (main)
-  (let* 
-  [(input (file->string "entrada.txt"))] ; Lee el archivo de entrada en un string.
-    ;(printf "Texto de entrada:\n~a\n" input) ; Imprime el texto de entrada.
-    (let [(tokens (tokenize input))] ; Tokeniza el string de entrada.
-       (print (es_P tokens 0)) ; Imprime el resultado de la función es_P.
-      (let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
-        (call-with-output-file "output.html" ; Abre el archivo de salida.
-          (lambda (out) (display output out))))))) ; Escribe el HTML en el archivo de salida.
+ (define (main)
+       (let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
+         (call-with-output-file "output.html" ; Abre el archivo de salida.
+           (lambda (out) (display output out))))
+ ) ; Escribe el HTML en el archivo de salida.
 
 (main) ; Ejecuta la función principal.
