@@ -493,7 +493,6 @@
   [(input (file->string "entrada.txt"))] ; Lee el archivo de entrada en un string.
     ;(printf "Texto de entrada:\n~a\n" input) ; Imprime el texto de entrada.
     (let [(tokens (tokenize input))] ; Tokeniza el string de entrada.
-      (print tokens) ; Imprime los tokens.
       (let [(output (generate-html tokens))] ; Genera HTML a partir de los tokens.
         (call-with-output-file "output.html" ; Abre el archivo de salida.
           (lambda (out) (display output out))))))) ; Escribe el HTML en el archivo de salida.
