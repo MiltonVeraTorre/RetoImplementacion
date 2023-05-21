@@ -161,7 +161,7 @@
 
             ; Si las condiciones se cumplen, llamamos a la función es_E para analizar la expresión que sigue.
             ; Pasamos el vector de tokens y el índice del primer token después de la asignación ("=") a es_E.
-            (es_E tokens (+ indice 3))
+            (es_O tokens (+ indice 3))
             ; Si alguna de las condiciones no se cumple, los tokens no forman una declaración de variable válida,
             ; por lo que devolvemos #f.
            (list #f indice (list-ref tokens indice))
@@ -254,19 +254,22 @@
 
 ;; es_O: vector indice -> numero / #f
 ;;; O → E (OP E)*
-
 (define (es_O tokens indice)
-  (let ((nuevo_indice (es_E tokens indice))) ; intenta obtener un nuevo índice de es_E
-    (if (and (number? nuevo_indice)
-             (equal? (car (list-ref tokens nuevo_indice)) OPERATOR)
-             (number? (es_E tokens (+ nuevo_indice 1)))) ; si se puede hacer una operación
-        (let loop ((indice_actual nuevo_indice)) ; inicializa la función de loop con el nuevo índice como el índice actual
-          (if (and
+  (let ((nuevo_indice (es_E tokens indice))) ; Intenta obtener un nuevo índice de es_E
+    (if (number? nuevo_indice) ; Si es_E fue exitoso
+        (if (and 
+                 (equal? (car (list-ref tokens nuevo_indice)) OPERATOR) ; Y el siguiente token es un operador
+                 (number? (es_E tokens (+ nuevo_indice 1)))) ; Y si hay otra expresión después del operador
+            (let loop ((indice_actual nuevo_indice)) ; inicializa la función de loop con el nuevo índice como el índice actual
+              (if (and
                    (equal? (car (list-ref tokens indice_actual)) OPERATOR)
                    (number? (es_E tokens (+ indice_actual 1))))
-              (loop (+ indice_actual 2)) ; sigue haciendo operaciones si es posible
-              indice_actual)) ; devuelve el índice actual cuando no hay más operaciones posibles
-       (list #f indice (list-ref tokens indice))))) ; si no se pudo hacer ninguna operación, devuelve #f
+                  (loop (+ indice_actual 2)) ; Sigue haciendo operaciones si es posible
+                  indice_actual)) ; Devuelve el índice actual cuando no hay más operaciones posibles
+            nuevo_indice) ; Si no hay operador, devuelve el índice de es_E
+       (list #f indice (list-ref tokens indice))))) ; Si es_E no fue exitoso, devuelve #f
+
+
 
 ; es_FOR: vector indice -> numero / #f
 ;;; FOR → "for" "(" DV O ";" AV ")" "{" LD "}"
@@ -407,7 +410,7 @@
     (cons NEWLINE "\r\n")
     ))
 
-(print (list-ref tokensEntrada 75))
+(print (list-ref tokensEntrada 6))
 
 (print (es_P 
     tokensEntrada
