@@ -11,14 +11,16 @@
 
 ;;; E → N | I | "(" E ")" | O
 
-;;; O → E OP E
+;;; O → E (OP E)*
 
 ;;; OP → "+" | "-" | "*" | "/" | "==" | "<" | ">" | "!="
 
-;;; C → "for" "(" DV ";" O ";" AV ")" "{" LD "}"
+;;; FOR → "for" "(" DV ";" O ";" AV ")" "{" LD "}"
+;; WHILE → "while" "(" O ")" "{" LD "}"
 
 ;;; F → "function" I "(" LI ")" "{" LD "}"
 
+;;; RD → "return" O
 
 ;;; LI → I "," LI | ε
 
@@ -35,7 +37,9 @@
 ;;; D = declaracion
 ;;; DV = declaracion de variable
 ;;; F = funcion
-;;; C = ciclo
+;;; RD = retorno de funcion
+;;; FOR = ciclo for
+;;; WHILE = ciclo while
 ;;; E = expresion
 ;;; O = operacion
 
@@ -52,7 +56,9 @@
 
 (define FUNCTION_KEYWORD 'function_keyword)
 (define VARIABLE_KEYWORD 'variable_keyword)
-(define CICLE_KEYWORD 'cicle_keyword)
+(define FOR_KEYWORD 'for_keyword)
+(define WHILE_KEYWORD 'while_keyword)
+(define RETURN_KEYWORD 'return_keyword)
 
 (define IDENTIFIER 'identifier)
 (define OPERATOR 'operator)
@@ -75,10 +81,10 @@
 
 ;;; P → LD
 (define (es_P tokens indice)
-  (if (>= indice (length tokens)); Si el indice es mayor a la longitud de la lista devolvemos que es falso
-     (list #f indice (list-ref tokens indice))
-      (es_LD tokens indice) ; En caso de que siga estando en la longitud valida pasamos los tokens y el indice inicial
-  )
+ ; (if (>= indice (length tokens)); Si el indice es mayor a la longitud de la lista devolvemos que es falso
+    ; (list #f indice (list-ref tokens indice))
+    (es_LD tokens indice) ; En caso de que siga estando en la longitud valida pasamos los tokens y el indice inicial
+ ; )
 )
 
 ; es_LD: lista indice -> numero / #f
@@ -113,15 +119,18 @@
 ;;; D → DV | F | C | COM
 (define (es_D tokens indice)
   (if (>= indice (length tokens)) ; Verificamos si la longitud es mayor que la de la lista
-     (list #f indice (list-ref tokens indice))
+     indice
+
       (let ((tmp (car (list-ref tokens indice))))
         (cond ((equal? tmp VARIABLE_KEYWORD) (es_DV tokens indice)) ; Verificamos si se trata de una declaración de una variable
               ((equal? tmp IDENTIFIER) (es_AV tokens indice)) ; Verificamos si se trata de una asignación de una variable
               ((equal? tmp FUNCTION_KEYWORD) (es_F tokens indice)) ; Verificamos si se trata de una función
-              ((equal? tmp CICLE_KEYWORD) (es_C tokens indice)) ; Verificamos si se trata de un ciclo
+              ((equal? tmp FOR_KEYWORD) (es_FOR tokens indice)) ; Verificamos si se trata de un ciclo for
+              ((equal? tmp WHILE_KEYWORD) (es_WHILE tokens indice)) ; Verificamos si se trata de un ciclo while
               ((equal? tmp COMMENT) (es_D tokens (+ indice 1))) ; Verificamos si se trata de un comentario
               ((equal? tmp NEWLINE) (es_D tokens (+ indice 1))) ; Si se trata de un espacio en blanco volvemos a llamar a es_D
               ((equal? tmp RIGHT_BRACE) (list #t indice)) ; Si se trata de un espacio en blanco volvemos a llamar a es_D
+              ((equal? tmp RETURN_KEYWORD) (es_D tokens (es_RD tokens indice))) ; Si se trata de un espacio en blanco volvemos a llamar a es_D
               (else(list #f indice (list-ref tokens indice))))))) ; Si no se identifica ninguno de los casos devolvemos que es falso y no se encontró una declaración valida
 
 
@@ -195,6 +204,36 @@
   )
 )
 
+; es_RD
+; Verifica si el se forma un retorno de función.
+; Un RD es un keyword return seguido de una expresión.
+
+; Devuelve el índice del token después de la DV, o #f si los tokens no forman una DV válida.
+
+;;; RD → "return" O
+(define (es_RD tokens indice)
+  (if (>= indice (length tokens)) ; Verificamos si se sobrepasa la longitud
+     (list #f indice (list-ref tokens indice))
+      ; Si hay más tokens para analizar, extraemos el tipo y el valor del token en el índice actual.
+      
+        
+        ; También verificamos si el siguiente token es un IDENTIFIER y si el token después de ese es un OPERATOR con valor "=".
+        ; Si todas estas condiciones se cumplen, entonces tenemos el comienzo de una declaración de variable.
+        (if (and 
+
+            (equal? (car (list-ref tokens indice)) RETURN_KEYWORD)  ; Luego verificamos si es el identificador return
+            ) ; Y este operador debe ser el operador igual
+
+            ; Si las condiciones se cumplen, llamamos a la función es_O para analizar la expresión que sigue.
+            (es_O tokens (+ indice 1))
+            ; Si alguna de las condiciones no se cumple, los tokens no forman una declaración de variable válida,
+            ; por lo que devolvemos #f.
+           (list #f indice (list-ref tokens indice))
+            )
+      
+  )
+)
+
 
 ; es_E: vector indice -> numero / #f
 ;;; E → N | I | "(" E ")"
@@ -229,11 +268,10 @@
               indice_actual)) ; devuelve el índice actual cuando no hay más operaciones posibles
        (list #f indice (list-ref tokens indice))))) ; si no se pudo hacer ninguna operación, devuelve #f
 
-; es_C: vector indice -> numero / #f
-;;; C → "for" "(" DV O ";" AV ")" "{" LD "}"
+; es_FOR: vector indice -> numero / #f
+;;; FOR → "for" "(" DV O ";" AV ")" "{" LD "}"
 
-;; es_C: lista indice -> numero / #f
-(define (es_C tokens indice)
+(define (es_FOR tokens indice)
   (if (and (equal? (cdr (list-ref tokens indice)) "for")
            (equal? (cdr (list-ref tokens (+ indice 1))) "("))
       (let* ((indice-1 (es_DV tokens (+ indice 2)))
@@ -255,6 +293,26 @@
             (list #f indice (list-ref tokens indice))))
       (list #f indice (list-ref tokens indice))))
 
+
+; es_FOR: vector indice -> numero / #f
+;;; WHILE → "while" "(" O ")" "{" LD "}"
+
+(define (es_WHILE tokens indice)
+
+    (if (and (equal? (car (list-ref tokens indice)) WHILE_KEYWORD) ; Verificamos si el token actual es un while
+             (equal? (cdr (list-ref tokens (+ indice 1))) "("))    ; Verificamos si el siguiente token es un parentesis izquierdo
+        (let* ((indice-1 (es_O tokens (+ indice 2)))               ; Llamamos a es_O para verificar si es una operación
+                 (indice-2 (if (and (number? indice-1) (equal? (cdr (list-ref tokens indice-1)) ")")) ; Verificamos si después hay un parentes´si de cierre
+                            (if (equal? (cdr (list-ref tokens (+ indice-1 1))) "{") ; Verificamos si después hay una llave de apertura
+                                (es_LD tokens (+ indice-1 2)) ; Llamamos a es_LD para verificar si es una lista de declaraciones
+                                (list #f indice (list-ref tokens indice)) ; Si no es una llave de apertura devolvemos que es falso
+                                )
+                            (list #f indice (list-ref tokens indice)) ; Si no es un parentesis de cierre devolvemos que es falso
+                            )))
+            (if (and (number? indice-2) (equal? (cdr (list-ref tokens indice-2)) "}")) ; Verificamos si después hay una llave de cierre
+                (+ indice-2 1) ; Si es así devolvemos el índice actual más uno
+                (list #f indice (list-ref tokens indice)))) ; Si no es una llave de cierre devolvemos que es falso
+        (list #f indice (list-ref tokens indice)))) ; Si no es un parentesis izquierdo devolvemos que es falso
 
 
 
@@ -328,7 +386,7 @@
     
     (cons NEWLINE "\r\n") 
     
-    (cons CICLE_KEYWORD "for") (cons LEFT_PARENTHESIS "(") (cons VARIABLE_KEYWORD "let") (cons IDENTIFIER "i") (cons OPERATOR "=") (cons NUMBER "5") (cons SEMICOLON ";") 
+    (cons FOR_KEYWORD "for") (cons LEFT_PARENTHESIS "(") (cons VARIABLE_KEYWORD "let") (cons IDENTIFIER "i") (cons OPERATOR "=") (cons NUMBER "5") (cons SEMICOLON ";") 
     (cons IDENTIFIER "i") (cons OPERATOR "<") (cons NUMBER "5") (cons SEMICOLON ";") (cons IDENTIFIER "i") (cons OPERATOR "=") (cons IDENTIFIER "i") (cons OPERATOR "+") (cons NUMBER "1") (cons RIGHT_PARENTHESIS ")") (cons LEFT_BRACE "{") (cons NEWLINE "\r\n") 
     (cons COMMENT "// Este codigo es importante ") (cons NEWLINE "\n") 
     (cons VARIABLE_KEYWORD "let") (cons IDENTIFIER "c") (cons OPERATOR "=") (cons NUMBER "3") (cons NEWLINE "\r\n") 
@@ -338,19 +396,19 @@
     (cons NEWLINE "\r\n") 
     (cons NEWLINE "\r\n") 
     (cons FUNCTION_KEYWORD "function") (cons IDENTIFIER "prueba") (cons LEFT_PARENTHESIS "(") (cons IDENTIFIER "a") (cons SEPARATOR ",") (cons IDENTIFIER "b") (cons RIGHT_PARENTHESIS ")") (cons LEFT_BRACE "{") (cons NEWLINE "\r\n") 
-    ; (cons KEYWORD "return") (cons IDENTIFIER "a") (cons OPERATOR "+") (cons IDENTIFIER "b") (cons NEWLINE "\r\n") 
+    (cons RETURN_KEYWORD "return") (cons IDENTIFIER "a") (cons OPERATOR "+") (cons IDENTIFIER "b") (cons NEWLINE "\r\n") 
     (cons RIGHT_BRACE "}") (cons NEWLINE "\r\n") 
     (cons NEWLINE "\r\n") 
 
-    ;(cons CICLE_KEYWORD "while") (cons LEFT_PARENTHESIS "(") (cons IDENTIFIER "a") (cons OPERATOR ">") (cons NUMBER "2") (cons RIGHT_PARENTHESIS ")") (cons LEFT_BRACE "{") (cons NEWLINE "\r\n") 
-    ;(cons VARIABLE_KEYWORD "let") (cons IDENTIFIER "z") (cons OPERATOR "=") (cons IDENTIFIER "z") (cons OPERATOR "+") (cons IDENTIFIER "a") (cons NEWLINE "\r\n") 
-    ;(cons RIGHT_BRACE "}") 
+    (cons WHILE_KEYWORD "while") (cons LEFT_PARENTHESIS "(") (cons IDENTIFIER "a") (cons OPERATOR ">") (cons NUMBER "2") (cons RIGHT_PARENTHESIS ")") (cons LEFT_BRACE "{") (cons NEWLINE "\r\n") 
+    (cons VARIABLE_KEYWORD "let") (cons IDENTIFIER "z") (cons OPERATOR "=") (cons IDENTIFIER "z") (cons OPERATOR "+") (cons IDENTIFIER "a") (cons NEWLINE "\r\n") 
+    (cons RIGHT_BRACE "}") 
     (cons NEWLINE "\r\n") 
     (cons NEWLINE "\r\n")
     ))
 
-;(print (list-ref tokensEntrada 59))
-(print(length tokensEntrada))
+(print (list-ref tokensEntrada 75))
+
 (print (es_P 
     tokensEntrada
     0

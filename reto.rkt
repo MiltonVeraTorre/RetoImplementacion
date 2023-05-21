@@ -48,7 +48,9 @@
 
 (define FUNCTION_KEYWORD 'function_keyword)
 (define VARIABLE_KEYWORD 'variable_keyword)
-(define CICLE_KEYWORD 'cicle_keyword)
+(define FOR_KEYWORD 'for_keyword)
+(define WHILE_KEYWORD 'while_keyword)
+(define RETURN_KEYWORD 'return_keyword)
 
 
 (define IDENTIFIER 'identifier)
@@ -170,11 +172,11 @@
                           [(string-prefix? str "function ") 
                            (inner (substring str 9) (cons (cons FUNCTION_KEYWORD "function") acc))]
                           [(string-prefix? str "for") 
-                           (inner (substring str 3) (cons (cons CICLE_KEYWORD "for") acc))]
+                           (inner (substring str 3) (cons (cons FOR_KEYWORD "for") acc))]
                           [(string-prefix? str "while") 
-                           (inner (substring str 5) (cons (cons CICLE_KEYWORD "while") acc))]
+                           (inner (substring str 5) (cons (cons WHILE_KEYWORD "while") acc))]
                           [(string-prefix? str "return") 
-                           (inner (substring str 6) (cons (cons KEYWORD "return") acc))]
+                           (inner (substring str 6) (cons (cons RETURN_KEYWORD "return") acc))]
 
                           ; Si el string comienza con un operador "=", "+", "-", "*", "/", "==", "<", ">", generamos un token OPERATOR y llamamos a inner de nuevo
                           [(string-prefix? str "= ") 
