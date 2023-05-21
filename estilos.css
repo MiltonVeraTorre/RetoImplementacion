@@ -19,7 +19,7 @@ text{
 .comment{
     color:gray
 }
-.keyword,.function_keyword,.variable_keyword,.cicle_keyword{
+.keyword,.function_keyword,.variable_keyword,.for_keyword,.while_keyword, .return_keyword{
     color:red;
 }
 .left_parenthesis,
@@ -37,5 +37,5 @@ text{
     color: red;
     font-weight: bold;
     text-decoration: underline;
-    
+
 }

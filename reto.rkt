@@ -598,6 +598,168 @@
       )
   )
 ) 
+;;;;;;;;;;;;;;;;;; INTERPRETE ;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Idea de implementación
+
+; Tener una lista que contenga las variables declaradas en sublistas con identificador y valor sin evaluar
+
+; Reutilizar codigo del analizador de gramatrica para que solamente evalue la lista de expresiones y busque por declaración o 
+; asignación de variable
+
+; Cuando se encuentre una declaración de variable se agrega a la lista de variables declaradas
+
+; Posteriormente correr una función que recorra la lista de variables declaradas y las evalúe
+
+; Al final tendríamos una lista de variables declaradas con su valor evaluado y lo podemos mostrar en consola
+
+; Modificaremos las siguientes funciones del analizador de gramatica
+
+; es_LD -> es_LD_Eval - Recorrera todas las declaraciónes del programa
+; es_D -> es_D_Eval - Evaluará cada declaración y solo hara operación si se trata de variables
+; es_DV -> es_DV_Eval - Evaluará cada declaración de variable y agregará a la lista de variables declaradas
+; es_AV -> es_AV_Eval - Evaluará cada asignación de variable y modificara el valor de la variable en la lista de variables declaradas
+; es_O -> es_O_Eval - Evaluará cada operación y devolverá el resultado de la operación
+; es_E -> es_E_Eval - Evaluará cada expresión y devolverá el valor de la expresión
+
+; es_LD: Verifica si una lista de declaraciones (LD) es válida según la gramática.
+; Esta función es la encargada de ir recorriendo las declaraciones e ir devolviendo el ultimo indice hasta el cual llego la ultima declaración
+;;; LD → D LD | ε
+(define (es_LD_Eval tokens indice)
+  (cond 
+      ; Si el índice es mayor que el número de tokens, entonces hemos alcanzado el final y devolvemos el índice actual.
+      [(>= indice (length tokens)) indice]
+      ; Si no hemos alcanzado el final, intentamos analizar una declaración (D).
+      [else 
+        (let ((resultado (es_D_Eval tokens indice))) ; Definimos la variable resultado que almacenará el resultado de es_D
+              (cond ((number? resultado) ; Verificamos si el resultado que me dio es_D es un número ya que si no lo es es porque devolvió una lista
+                     (es_LD_Eval tokens resultado)) ; Si es_D fue exitoso, intentamos analizar el resto de los tokens como una lista de declaraciones (LD)
+                    ((equal? (car resultado) #t) ; Verificamos si el primer elemento de la lista es #t
+                     (cadr resultado)) ; Si el primer elemento de la lista es #t, devolvemos el segundo elemento de la lista que es el índice
+                    (else resultado) ; Si el primer elemento de la lista es #f, devolvemos la lista tal cual
+              )
+            )
+      ]
+  )
+)
+; es_D: Verifica si una lista de tokens forma una declaración válida (D) según la gramática.
+;;; D → DV | F | C | COM
+(define (es_D_Eval tokens indice)
+  (if (>= indice (length tokens)) ; Verificamos si la longitud es mayor que la de la lista
+     indice ; Si es mayor devolvemos el indice
+
+      (let ((tmp (car (list-ref tokens indice)))) 
+        (cond ((equal? tmp VARIABLE_KEYWORD) (es_DV tokens indice)) ; Verificamos si se trata de una declaración de una variable
+              ((equal? tmp IDENTIFIER) (es_AV tokens indice)) ; Verificamos si se trata de una asignación de una variable
+              (else
+                (es_D_Eval tokens (+ indice 1)) ; Si no se identifica ninguno de los casos seguimos buscando declaraciones de variables
+              )
+        )
+      )
+  )
+) 
+
+
+; es_DV: Verifica si el se forma una declaración de variable válida (DV) según la gramática.
+;;; DV → ("let" | "const") I "=" E
+(define (es_DV_Eval tokens indice)
+  (if (>= indice (length tokens)) ; Verificamos si se sobrepasa la longitud
+     (list #f indice (list-ref tokens indice))
+      ; Si hay más tokens para analizar, extraemos el tipo y el valor del token en el índice actual.
+      (let 
+           (
+            (token-type (car (list-ref tokens indice))) ; Guardamos el tipo de token
+            (token-value (cdr (list-ref tokens indice))) ; Guardamos el valor del token
+            (token-identifier (cdr (list-ref tokens (+ indice 1))))
+           )
+        
+        ; También verificamos si el siguiente token es un IDENTIFIER y si el token después de ese es un OPERATOR con valor "=".
+        ; Si todas estas condiciones se cumplen, entonces tenemos el comienzo de una declaración de variable.
+        (if (and 
+                 (equal? token-type VARIABLE_KEYWORD) ; Primero verificamos que el token sea de tipo VARIABLE_KEYWORD
+                 (or (string=? token-value "let") (string=? token-value "const")) ; Luego verificamos si el valor del token es let o const
+                 (equal? (car (list-ref tokens (+ indice 1))) IDENTIFIER)  ; Luego verificamos si hay un identificador
+                 (equal? (car (list-ref tokens (+ indice 2))) OPERATOR) ; Posteriormente debe de haber un operador
+                 (string=? (cdr (list-ref tokens (+ indice 2))) "=")) ; Y este operador debe ser el operador igual
+
+            ; Si las condiciones se cumplen, llamamos a la función es_O para ver si es una operación válida.
+            (let* ((result-o (es_O_Eval tokens (+ indice 3)))
+                   (new-index (car result-o))
+                   (operation (cdr result-o)))
+              (list new-index (list token-identifier operation)))
+            ; Si alguna de las condiciones no se cumple, los tokens no forman una declaración de variable válida,
+            ; por lo que devolvemos #f.
+           (list #f indice (list-ref tokens indice))
+            )
+      )
+  )
+)
+
+; es_AV: Verifica si el se forma una asignación de variable válida (AV) según la gramática.
+;;; DV → ("let" | "const") I "=" O
+(define (es_AV_Eval tokens indice)
+  (if (>= indice (length tokens)) ; Verificamos si se sobrepasa la longitud
+     (list #f indice (list-ref tokens indice))
+
+        ; También verificamos si el siguiente token es un IDENTIFIER y si el token después de ese es un OPERATOR con valor "=".
+        ; Si todas estas condiciones se cumplen, entonces tenemos el comienzo de una declaración de variable.
+        (if (and 
+                 
+                 (equal? (car (list-ref tokens indice)) IDENTIFIER)  ; Luego verificamos si hay un identificador
+                 (equal? (car (list-ref tokens (+ indice 1))) OPERATOR) ; Posteriormente debe de haber un operador
+                 (string=? (cdr (list-ref tokens (+ indice 1))) "=")) ; Y este operador debe ser el operador igual
+
+            ; Si las condiciones se cumplen, llamamos a la función es_O para ver si es una operación válida.
+            (es_O_Eval tokens (+ indice 2))
+            ; Si alguna de las condiciones no se cumple, los tokens no forman una declaración de variable válida,
+            ; por lo que devolvemos #f.
+           (list #f indice (list-ref tokens indice))
+            )
+      
+  )
+)
+
+;; es_O: Verifica si el se forma una operación válida (O) según la gramática.
+;;; O → E (OP E)*
+(define (es_O_Eval tokens indice)
+  (let* ((resultado-e1 (es_E_Eval tokens indice))  ; Intenta obtener un nuevo índice y expresión de es_E_Eval
+         (nuevo_indice (car resultado-e1)) ; Guardamos el valor del nuevo indice
+         (valor-e1 (cadr resultado-e1))) ; Guardamos el valor de la expresión
+    (if (and (number? nuevo_indice)  ; Si es_E_Eval fue exitoso
+             (equal? (car (list-ref tokens nuevo_indice)) OPERATOR)) ; El siguiente token es un operador
+        (let loop ((indice_actual nuevo_indice) ; Inicia la función de loop con el nuevo índice como el índice actual
+                   (operaciones (list valor-e1))) ; Almacena la primera expresión en la lista de operaciones
+          (if (and
+               (equal? (car (list-ref tokens indice_actual)) OPERATOR) ; El token actual es un operador
+               (number? (car (es_E_Eval tokens (+ indice_actual 1))))) ; Y si hay otra expresión después del operador
+
+              (let* ((operador (cdr (list-ref tokens indice_actual))) ; Almacena el operador
+                     (resultado-e2 (es_E_Eval tokens (+ indice_actual 1))) ; Obtiene el índice y la expresión de es_E_Eval
+                     (siguiente_indice (car resultado-e2))
+                     (valor-e2 (cadr resultado-e2))
+                     (nuevas_operaciones (append operaciones (list operador valor-e2)))) ; Añade el operador y la expresión a la lista de operaciones
+
+                (loop (+ siguiente_indice 1) nuevas_operaciones)) ; Continúa con el loop con el nuevo índice y las operaciones actualizadas
+
+              (list indice_actual operaciones))) ; Devuelve el índice actual y las operaciones cuando no hay más operaciones posibles
+        (list nuevo_indice (list valor-e1))) ; Si no hay operador, devuelve el índice y el valor de es_E_Eval
+  )
+)
+
+; es_E: Verifica si el se forma una expresión válida (E) según la gramática.
+;;; E → N | I 
+
+(define (es_E_Eval tokens indice)
+  (let ((token-actual (list-ref tokens indice))) ; Guardamos el token actual en una variable
+    (cond ; Ejecutamos el condicional para saber si se cumple alguno de los criterios
+      ((>= indice (length tokens)) (list #f indice token-actual))   ;; No hay más tokens por lo que se devuleve que es falso
+      ((equal? (car token-actual) NUMBER) (list (+ indice 1) (cdr token-actual)))  ; Puede ser un numero
+      ((equal? (car token-actual) IDENTIFIER) (list (+ indice 1) (cdr token-actual)))  ;; Puede ser un identificador
+      (else (list #f indice token-actual))
+    )
+  )
+)
+
 
 
 
