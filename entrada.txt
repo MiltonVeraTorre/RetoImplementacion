@@ -2,12 +2,12 @@
 
 let a = 5 
 let b = 10 
-let c = 30 + 20 
+let c = 30 + 20 - 5
 
 for(let i = 5 ; i < 5 ; i = i + 1 ){ 
     // Este codigo es importante 
-    let c = 3 
-    c = i + 3 
+    let d = 3 
+    d = i + 3 
     
 } 
 
