@@ -766,8 +766,7 @@
                           self-refs-names)))
             env)))
 
-
-; Aplica una operación a dos operandos
+; Aplica un operador a dos operandos
 (define (apply-operator operator operand1 operand2)
   (case operator
     [("+") (+ operand1 operand2)]
@@ -777,14 +776,33 @@
 
 ; Evalúa una lista de operaciones y operandos
 (define (eval-operations operations)
-  (let loop ((operands (filter number? operations)) ; Extraer operandos
-             (operators (filter string? operations)) ; Extraer operadores
-             (result (car operations)))
-    (if (null? operators)
-        result
-        (loop (cdr operands)
-              (cdr operators)
-              (apply-operator (car operators) result (cadr operands))))))
+  ;; Primero, maneja las multiplicaciones y divisiones
+  (let* ((intermediate-ops (handle-mult-div operations '()))
+         ;; Luego, maneja las sumas y restas
+         (final-result (handle-add-sub intermediate-ops '())))
+    final-result))
+
+; Maneja las multiplicaciones y divisiones
+(define (handle-mult-div operations result)
+  (if (null? operations)
+      (reverse result)
+      (let ((first (car operations))
+            (rest (cdr operations)))
+        (if (and (string? first) (or (string=? first "*") (string=? first "/")))
+            (let ((new-result (apply-operator first (car result) (car rest))))
+              (handle-mult-div (cdr rest) (cons new-result (cdr result))))
+            (handle-mult-div rest (cons first result))))))
+
+; Maneja las sumas y restas
+(define (handle-add-sub operations result)
+  (if (null? operations)
+      (car result)
+      (let ((first (car operations))
+            (rest (cdr operations)))
+        (if (and (string? first) (or (string=? first "+") (string=? first "-")))
+            (let ((new-result (apply-operator first (car result) (car rest))))
+              (handle-add-sub (cdr rest) (cons new-result (cdr result))))
+            (handle-add-sub rest (cons first result))))))
 
 ; Evalúa una lista de expresiones
 (define (eval-expr-list expr-list)
@@ -793,6 +811,13 @@
                (operations (cadr expr)))
            (cons var (eval-operations operations))))
        expr-list))
+
+
+
+
+
+
+
 ; Obtiene el valor de una variable en el entorno
 (define (get-env-variable env var)
   (let ((pair (assoc var env))) 
