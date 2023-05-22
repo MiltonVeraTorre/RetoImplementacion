@@ -772,7 +772,9 @@
     [("+") (+ operand1 operand2)]
     [("-") (- operand1 operand2)]
     [("*") (* operand1 operand2)]
-    [("/") (/ operand1 operand2)]))
+    [("/") (exact->inexact (/ operand1 operand2))]
+  )
+)
 
 ; Evalúa una lista de operaciones y operandos
 (define (eval-operations operations)
