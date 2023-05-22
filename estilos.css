@@ -11,7 +11,7 @@ text{
     color:black;
 }
 .operator{
-    color: red;
+    color: rgb(139, 9, 9);
 }
 .number{
     color: violet;
@@ -20,7 +20,7 @@ text{
     color:gray
 }
 .keyword,.function_keyword,.variable_keyword,.for_keyword,.while_keyword, .return_keyword{
-    color:red;
+    color:rgb(85, 0, 255);
 }
 .left_parenthesis,
 .right_parenthesis{

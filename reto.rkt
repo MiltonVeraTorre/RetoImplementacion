@@ -227,14 +227,15 @@
 
 ;;; D → DV | F | C | COM
 
-;;; DV → ("let" | "const") I "=" E 
-;;; AV →  I "=" E 
+;;; DV → ("let" | "const") I "=" O
+;;; AV →  I "=" O
 
-;;; E → N | I | "(" E ")" | O
+;;; E → N | I | "(" E ")" 
 
 ;;; O → E (OP E)*
 
 ;;; OP → "+" | "-" | "*" | "/" | "==" | "<" | ">" | "!="
+
 
 ;;; FOR → "for" "(" DV ";" O ";" AV ")" "{" LD "}"
 ;; WHILE → "while" "(" O ")" "{" LD "}"
@@ -321,7 +322,7 @@
 
 
 ; es_DV: Verifica si el se forma una declaración de variable válida (DV) según la gramática.
-;;; DV → ("let" | "const") I "=" E
+;;; DV → ("let" | "const") I "=" O
 (define (es_DV tokens indice)
   (if (>= indice (length tokens)) ; Verificamos si se sobrepasa la longitud
      (list #f indice (list-ref tokens indice))
@@ -351,7 +352,7 @@
   )
 )
 ; es_AV: Verifica si el se forma una asignación de variable válida (AV) según la gramática.
-;;; DV → ("let" | "const") I "=" O
+;;; AV →  I "=" O
 (define (es_AV tokens indice)
   (if (>= indice (length tokens)) ; Verificamos si se sobrepasa la longitud
      (list #f indice (list-ref tokens indice))
@@ -602,6 +603,7 @@
 
 ; Manejo del entorno del interprete
 (define ENV '())
+
 ; Función que agrega una variable al entorno
 (define (add-to-env variable value)
   (set! ENV (cons (list variable value) ENV)))
@@ -858,9 +860,11 @@
     ; Si es una lista remplazar el token del par por un token de error
 
 ; Ejecutamos el interprete para que coloque las variables en el entorno
+
 (es_LD_Eval tokens 0)
 ; Eliminamos las autoreferencias
 (set! ENV (remove-self-and-mutual-references ENV))
+
 ; Ejecutamos las operaciones y mostramos el entorno
 (display "Variables de entorno sin operaciones: ")
 (newline)
